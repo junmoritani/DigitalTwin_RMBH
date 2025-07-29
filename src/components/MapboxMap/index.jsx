@@ -30,6 +30,7 @@ function MapboxMap() {
     });
 
     mapRef.current.on("style.load", () => {
+      //________________________________________ZONEAMENTO
       // fetch("/data/Zoneamento_wgs84.geojson")
       //   .then((res) => res.json())
       //   .then((geojson) => {
@@ -73,6 +74,7 @@ function MapboxMap() {
       //     });
       //   });
       setStyleLoaded(true);
+      //________________________________________TENTATIVA LIGHTS
       // Initialize light settings once the style is loaded using the new setLights
       // const initialLightPos = getSunPosition(hour);
       // mapRef.current.setLights([
@@ -91,29 +93,29 @@ function MapboxMap() {
       //     },
       //   },
       // ]);
-      fetch("/data/Lotes.geojson")
-        .then((res) => res.json())
-        .then((geojson) => {
-          if (!mapRef.current.getSource("lotes")) {
-            mapRef.current.addSource("lotes", {
-              type: "geojson",
-              data: geojson,
-            });
-          }
+      //________________________________________LOTES
+      // fetch("/data/Lotes.geojson")
+      //   .then((res) => res.json())
+      //   .then((geojson) => {
+      //     if (!mapRef.current.getSource("lotes")) {
+      //       mapRef.current.addSource("lotes", {
+      //         type: "geojson",
+      //         data: geojson,
+      //       });
+      //     }
 
-          mapRef.current.addLayer({
-            id: "lotes-layer",
-            type: "line",
-            source: "lotes",
-            paint: {
-              "line-color": "rgba(175, 175, 175, 0.9)",
+      //     mapRef.current.addLayer({
+      //       id: "lotes-layer",
+      //       type: "line",
+      //       source: "lotes",
+      //       paint: {
+      //         "line-color": "rgba(175, 175, 175, 0.9)",
 
-              "line-width": 1,
-            },
-          });
-        });
-      //________________________________________
-
+      //         "line-width": 1,
+      //       },
+      //     });
+      //   });
+      //________________________________________ ARVORES
       fetch("/data/Arvores.geojson")
         .then((res) => {
           // Check if the response is ok (status in the range 200-299)
@@ -137,7 +139,7 @@ function MapboxMap() {
             type: "circle",
             source: "arvores",
             paint: {
-              "circle-radius": 5, // Made it a bit bigger to be sure
+              "circle-radius": 5,
               "circle-color": "#38a169",
             },
           });
