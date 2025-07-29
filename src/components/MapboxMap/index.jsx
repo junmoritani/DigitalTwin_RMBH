@@ -91,6 +91,64 @@ function MapboxMap() {
       //     },
       //   },
       // ]);
+      fetch("/data/Lotes.geojson")
+        .then((res) => res.json())
+        .then((geojson) => {
+          if (!mapRef.current.getSource("lotes")) {
+            mapRef.current.addSource("lotes", {
+              type: "geojson",
+              data: geojson,
+            });
+          }
+
+          mapRef.current.addLayer({
+            id: "lotes-layer",
+            type: "line",
+            source: "lotes",
+            paint: {
+              "line-color": "rgba(175, 175, 175, 0.9)",
+
+              "line-width": 1,
+            },
+          });
+        });
+      //________________________________________
+
+      fetch("/data/Arvores.geojson")
+        .then((res) => {
+          // Check if the response is ok (status in the range 200-299)
+          if (!res.ok) {
+            throw new Error(`Network response was not ok: ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then((geojson) => {
+          console.log("GeoJSON loaded successfully:", geojson); // Log to inspect data
+
+          if (!mapRef.current.getSource("arvores")) {
+            mapRef.current.addSource("arvores", {
+              type: "geojson",
+              data: geojson,
+            });
+          }
+
+          mapRef.current.addLayer({
+            id: "arvores-layer",
+            type: "circle",
+            source: "arvores",
+            paint: {
+              "circle-radius": 5, // Made it a bit bigger to be sure
+              "circle-color": "#38a169",
+            },
+          });
+
+          // ...after mapRef.current.addLayer({...})
+          console.log("Number of tree features:", geojson.features?.length);
+        })
+        .catch((error) => {
+          // THIS WILL CATCH ERRORS LIKE 404 NOT FOUND
+          console.error("Failed to load or process GeoJSON:", error);
+        });
     });
 
     return () => mapRef.current?.remove();
