@@ -30,49 +30,49 @@ function MapboxMap() {
     });
 
     mapRef.current.on("style.load", () => {
-      //________________________________________ZONEAMENTO
-      // fetch("/data/Zoneamento_wgs84.geojson")
-      //   .then((res) => res.json())
-      //   .then((geojson) => {
-      //     const idToColor = {};
-      //     const usedColors = new Set();
-      //     const getRandomColor = () => {
-      //       let color;
-      //       do {
-      //         color = `#${Math.floor(Math.random() * 16777215)
-      //           .toString(16)
-      //           .padStart(6, "0")}`;
-      //       } while (usedColors.has(color));
-      //       usedColors.add(color);
-      //       return color;
-      //     };
-      //     geojson.features.forEach((feature) => {
-      //       const id = feature.properties.ID_ZONEAME;
-      //       if (!idToColor[id]) {
-      //         idToColor[id] = getRandomColor();
-      //       }
-      //     });
-      //     const fillColorExpression = ["match", ["get", "ID_ZONEAME"]];
-      //     Object.entries(idToColor).forEach(([id, color]) => {
-      //       fillColorExpression.push(parseInt(id), color);
-      //     });
-      //     fillColorExpression.push("#cccccc"); // fallback color
-      //     mapRef.current.addSource("urban-areas", {
-      //       type: "geojson",
-      //       data: geojson,
-      //     });
-      //     mapRef.current.addLayer({
-      //       id: "bairros-populares",
-      //       type: "fill",
-      //       source: "urban-areas",
-      //       paint: {
-      //         "fill-color": fillColorExpression,
-      //         "fill-opacity": 0.3,
-      //         "line-color": "#333",
-      //         "line-width": 1,
-      //       },
-      //     });
-      //   });
+      // ________________________________________ZONEAMENTO;
+      fetch("/data/Zoneamento_wgs84.geojson")
+        .then((res) => res.json())
+        .then((geojson) => {
+          const idToColor = {};
+          const usedColors = new Set();
+          const getRandomColor = () => {
+            let color;
+            do {
+              color = `#${Math.floor(Math.random() * 16777215)
+                .toString(16)
+                .padStart(6, "0")}`;
+            } while (usedColors.has(color));
+            usedColors.add(color);
+            return color;
+          };
+          geojson.features.forEach((feature) => {
+            const id = feature.properties.ID_ZONEAME;
+            if (!idToColor[id]) {
+              idToColor[id] = getRandomColor();
+            }
+          });
+          const fillColorExpression = ["match", ["get", "ID_ZONEAME"]];
+          Object.entries(idToColor).forEach(([id, color]) => {
+            fillColorExpression.push(parseInt(id), color);
+          });
+          fillColorExpression.push("#cccccc"); // fallback color
+          mapRef.current.addSource("urban-areas", {
+            type: "geojson",
+            data: geojson,
+          });
+          mapRef.current.addLayer({
+            id: "bairros-populares",
+            type: "fill",
+            source: "urban-areas",
+            paint: {
+              "fill-color": fillColorExpression,
+              "fill-opacity": 0.3,
+              "line-color": "#333",
+              "line-width": 1,
+            },
+          });
+        });
       setStyleLoaded(true);
       //________________________________________TENTATIVA LIGHTS
       // Initialize light settings once the style is loaded using the new setLights
@@ -204,7 +204,7 @@ function MapboxMap() {
   const selectStyle = {
     width: "100%",
   };
-
+  //________________________________________TENTATIVA LIGHTS
   // function getSunPosition(hour) {
   //   // Let's make these values more extreme for debugging visibility
   //   const azimuthal = (hour / 24) * 360;
