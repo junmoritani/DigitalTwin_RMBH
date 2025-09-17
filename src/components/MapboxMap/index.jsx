@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "./style.css";
 import TreeCard from "../TreeCard";
+import Toolbar from "../Toolbar";
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = TOKEN; // set once, outside component
@@ -9,8 +10,13 @@ mapboxgl.accessToken = TOKEN; // set once, outside component
 function MapboxMap() {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
+  const addModeRef = useRef(false);
 
+  const [treesData, setTreesData] = useState(null);
   const [selectedTree, setSelectedTree] = useState(null);
+
+  const [addMode, setAddMode] = useState(false);
+  const [pendingCoords, setPendingCoords] = useState(null);
 
   useEffect(() => {
     if (!TOKEN) {
@@ -102,6 +108,7 @@ function MapboxMap() {
         const res = await fetch("/data/Arvores.geojson");
         if (!res.ok) throw new Error(res.statusText);
         const geojson = await res.json();
+        setTreesData(geojson);
 
         if (!mapRef.current.getSource("arvores")) {
           mapRef.current.addSource("arvores", {
@@ -126,25 +133,72 @@ function MapboxMap() {
       }
     });
 
+    // select tree
     mapRef.current.on("click", "arvores-layer", (e) => {
       if (e.features.length > 0) {
         const treeData = e.features[0].properties;
-        console.log("oioi deu click");
         setSelectedTree(treeData);
-        console.log(selectedTree);
       }
+    });
+
+    // add tree mode
+    mapRef.current.on("click", (e) => {
+      if (!addModeRef.current) return;
+      setPendingCoords([e.lngLat.lng, e.lngLat.lat]);
+      setAddMode(false);
     });
 
     return () => mapRef.current?.remove();
   }, []);
 
+  useEffect(() => {
+    addModeRef.current = addMode;
+  }, [addMode]);
+
+  // Keep map updated if treesData changes
+  useEffect(() => {
+    if (mapRef.current && treesData) {
+      const source = mapRef.current.getSource("arvores");
+      if (source) source.setData(treesData);
+    }
+  }, [treesData]);
+
+  const handleSaveTree = (newTree) => {
+    setTreesData({
+      ...treesData,
+      features: [...treesData.features, newTree],
+    });
+    setPendingCoords(null);
+  };
+
+  const handleDeleteTree = (id) => {
+    if (!treesData) return;
+    const newFeatures = treesData.features.filter(
+      (f) => f.properties.ID !== id
+    );
+    setTreesData({ ...treesData, features: newFeatures });
+    setSelectedTree(null);
+  };
   return (
-    <>
-      <div ref={mapContainerRef} id="map" className="map-container" />
+    <div className="map">
+      <Toolbar
+        addMode={addMode}
+        setAddMode={setAddMode}
+        pendingCoords={pendingCoords}
+        onSaveTree={handleSaveTree}
+        onCancelAdd={() => setPendingCoords(null)}
+      />
+
+      <div ref={mapContainerRef} className="map-container" />
+
       {selectedTree && (
-        <TreeCard tree={selectedTree} onClose={() => setSelectedTree(null)} />
+        <TreeCard
+          tree={selectedTree}
+          onClose={() => setSelectedTree(null)}
+          onDelete={handleDeleteTree}
+        />
       )}
-    </>
+    </div>
   );
 }
 

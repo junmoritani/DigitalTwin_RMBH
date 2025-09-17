@@ -1,0 +1,9 @@
+/* Toolbar on the left */
+.toolbar {
+  width: 250px;
+  flex-shrink: 0;
+  background: white;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
