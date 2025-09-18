@@ -163,6 +163,32 @@ function MapboxMap() {
     }
   }, [treesData]);
 
+  const handleAddTreeAtMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+
+        // Save coordinates to state so AddTreeForm can use them
+        setPendingCoords([longitude, latitude]);
+        setAddMode(true); // open the form right away if you want
+
+        // Fly the map to the new point
+        mapRef.current?.flyTo({
+          center: [longitude, latitude],
+          zoom: 18,
+        });
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        alert("Could not get your location");
+      }
+    );
+  };
+
   const handleSaveTree = (newTree) => {
     setTreesData({
       ...treesData,
@@ -187,6 +213,7 @@ function MapboxMap() {
         pendingCoords={pendingCoords}
         onSaveTree={handleSaveTree}
         onCancelAdd={() => setPendingCoords(null)}
+        AddTreeAtMyLocation={handleAddTreeAtMyLocation}
       />
 
       <div ref={mapContainerRef} className="map-container" />

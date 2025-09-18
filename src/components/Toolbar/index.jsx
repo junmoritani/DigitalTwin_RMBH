@@ -8,10 +8,12 @@ function Toolbar({
   pendingCoords,
   onSaveTree,
   onCancelAdd,
+  AddTreeAtMyLocation,
 }) {
   return (
     <div className="toolbar">
       <AddTreeButton addMode={addMode} setAddMode={setAddMode} />
+      <button onClick={AddTreeAtMyLocation}>📍 Add Tree at My Location</button>
 
       {pendingCoords && (
         <AddTreeForm
