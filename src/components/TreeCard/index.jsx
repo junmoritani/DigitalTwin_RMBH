@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "./style.css";
+import StreetViewImage from "../StreetViewImage";
 
 function TreeCard({ tree, onClose, onDelete }) {
   const [showReportOptions, setShowReportOptions] = useState(false);
@@ -7,6 +8,11 @@ function TreeCard({ tree, onClose, onDelete }) {
   return (
     <div className="card">
       <h3>ID #{tree.ID}</h3>
+      <StreetViewImage
+        location="40.689247,-74.044502"
+        heading={151}
+        fov={110}
+      />
       <div>
         <p>
           <strong>Tipo:</strong> {tree.TIPO_INDIVIDUO || "N/A"}

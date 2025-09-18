@@ -8,5 +8,5 @@ export default defineConfig({
   define: {
     global: {},
   },
-  base: "/DigitalTwin_RMBH",
+  // base: "/DigitalTwin_RMBH",
 });
