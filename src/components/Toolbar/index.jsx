@@ -1,5 +1,6 @@
 import AddTreeButton from "../AddTreeButton";
 import AddTreeForm from "../AddTreeForm";
+import LayerButton from "../LayerButton";
 import "./style.css";
 
 function Toolbar({
@@ -9,19 +10,31 @@ function Toolbar({
   onSaveTree,
   onCancelAdd,
   AddTreeAtMyLocation,
+  onShowZoneamento,
+  zoneamentoVisible,
 }) {
   return (
     <div className="toolbar">
-      <AddTreeButton addMode={addMode} setAddMode={setAddMode} />
-      <button onClick={AddTreeAtMyLocation}>📍 Add Tree at My Location</button>
+      <div className="addTreeButtons-container">
+        <AddTreeButton addMode={addMode} setAddMode={setAddMode} />
+        <button onClick={AddTreeAtMyLocation}>
+          📍 Add Tree at My Location
+        </button>
 
-      {pendingCoords && (
-        <AddTreeForm
-          coords={pendingCoords}
-          onSave={onSaveTree}
-          onCancel={onCancelAdd}
+        {pendingCoords && (
+          <AddTreeForm
+            coords={pendingCoords}
+            onSave={onSaveTree}
+            onCancel={onCancelAdd}
+          />
+        )}
+      </div>
+      <div className="layerButtons-container">
+        <LayerButton
+          showLayer={onShowZoneamento}
+          zoneamentoVisible={zoneamentoVisible}
         />
-      )}
+      </div>
     </div>
   );
 }

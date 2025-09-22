@@ -9,10 +9,14 @@ function TreeCard({ tree, onClose, onDelete }) {
     <div className="card">
       <h3>ID #{tree.ID}</h3>
       <StreetViewImage
-        location="40.689247,-74.044502"
+        // location={`${tree.geometry.coordinates[1]},${tree.geometry.coordinates[0]}`}
+        location="0,0"
         heading={151}
         fov={110}
       />
+      //Mudar a referencia da imagem do street view para endereço ou outra coisa
+      porque a tree só passa as propriedades, e as coordenadas da geometria está
+      fora disso. Também talvez seja possivel usar as coordenadas sirgas 2000
       <div>
         <p>
           <strong>Tipo:</strong> {tree.TIPO_INDIVIDUO || "N/A"}

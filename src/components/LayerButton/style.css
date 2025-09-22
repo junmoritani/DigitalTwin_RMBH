@@ -1,0 +1,31 @@
+toggle-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: #eee;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.toggle-btn:hover {
+  background: #ddd;
+}
+
+.toggle-btn.active {
+  background: #38a169; /* green */
+  border: none;
+  color: white;
+}
+
+.imageLayer {
+  background-color: #a8a8a8;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+}
+
+.bt-container {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}

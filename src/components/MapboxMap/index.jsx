@@ -14,10 +14,12 @@ function MapboxMap() {
 
   const [treesData, setTreesData] = useState(null);
   const [selectedTree, setSelectedTree] = useState(null);
+  const [zoneamentoVisible, setZoneamentoVisible] = useState(false);
 
   const [addMode, setAddMode] = useState(false);
   const [pendingCoords, setPendingCoords] = useState(null);
 
+  // checks mapbox token
   useEffect(() => {
     if (!TOKEN) {
       console.error("Mapbox token is missing. Check your .env file.");
@@ -35,53 +37,56 @@ function MapboxMap() {
       antialias: true,
     });
 
-    // load trees
+    // extra map content
     mapRef.current.on("load", async () => {
-      // ________________________________________ZONEAMENTO;
-      // fetch("/data/Zoneamento_wgs84.geojson")
-      //   .then((res) => res.json())
-      //   .then((geojson) => {
-      //     const idToColor = {};
-      //     const usedColors = new Set();
-      //     const getRandomColor = () => {
-      //       let color;
-      //       do {
-      //         color = `#${Math.floor(Math.random() * 16777215)
-      //           .toString(16)
-      //           .padStart(6, "0")}`;
-      //       } while (usedColors.has(color));
-      //       usedColors.add(color);
-      //       return color;
-      //     };
-      //     geojson.features.forEach((feature) => {
-      //       const id = feature.properties.ID_ZONEAME;
-      //       if (!idToColor[id]) {
-      //         idToColor[id] = getRandomColor();
-      //       }
-      //     });
-      //     const fillColorExpression = ["match", ["get", "ID_ZONEAME"]];
-      //     Object.entries(idToColor).forEach(([id, color]) => {
-      //       fillColorExpression.push(parseInt(id), color);
-      //     });
-      //     fillColorExpression.push("#cccccc"); // fallback color
-      //     mapRef.current.addSource("urban-areas", {
-      //       type: "geojson",
-      //       data: geojson,
-      //     });
-      //     mapRef.current.addLayer({
-      //       id: "bairros-populares",
-      //       type: "fill",
-      //       source: "urban-areas",
-      //       paint: {
-      //         "fill-color": fillColorExpression,
-      //         "fill-opacity": 0.3,
-      //         "line-color": "#333",
-      //         "line-width": 1,
-      //       },
-      //     });
-      //   });
-      // setStyleLoaded(true);
-      //________________________________________LOTES
+      //_____________________________________________________________ZONEAMENTO;
+      fetch("/data/Zoneamento_wgs84.geojson")
+        .then((res) => res.json())
+        .then((geojson) => {
+          const idToColor = {};
+          const usedColors = new Set();
+          const getRandomColor = () => {
+            let color;
+            do {
+              color = `#${Math.floor(Math.random() * 16777215)
+                .toString(16)
+                .padStart(6, "0")}`;
+            } while (usedColors.has(color));
+            usedColors.add(color);
+            return color;
+          };
+          geojson.features.forEach((feature) => {
+            const id = feature.properties.ID_ZONEAME;
+            if (!idToColor[id]) {
+              idToColor[id] = getRandomColor();
+            }
+          });
+          const fillColorExpression = ["match", ["get", "ID_ZONEAME"]];
+          Object.entries(idToColor).forEach(([id, color]) => {
+            fillColorExpression.push(parseInt(id), color);
+          });
+          fillColorExpression.push("#cccccc"); // fallback color
+          mapRef.current.addSource("urban-areas", {
+            type: "geojson",
+            data: geojson,
+          });
+          mapRef.current.addLayer({
+            id: "zoneamento-layer",
+            type: "fill",
+            source: "urban-areas",
+            paint: {
+              "fill-color": fillColorExpression,
+              "fill-opacity": 0.3,
+              "line-color": "#333",
+              "line-width": 1,
+            },
+            layout: {
+              visibility: "none", // start hidden
+            },
+          });
+        });
+
+      //_____________________________________________________________LOTES
       // fetch("/data/Lotes.geojson")
       //   .then((res) => res.json())
       //   .then((geojson) => {
@@ -103,7 +108,7 @@ function MapboxMap() {
       //       },
       //     });
       //   });
-
+      //_____________________________________________________________ARVORES
       try {
         const res = await fetch("/data/Arvores.geojson");
         if (!res.ok) throw new Error(res.statusText);
@@ -163,6 +168,7 @@ function MapboxMap() {
     }
   }, [treesData]);
 
+  //choosing location of new tree in the map
   const handleAddTreeAtMyLocation = () => {
     if (!navigator.geolocation) {
       alert("Geolocation is not supported by your browser");
@@ -189,6 +195,7 @@ function MapboxMap() {
     );
   };
 
+  //saves the new tree
   const handleSaveTree = (newTree) => {
     setTreesData({
       ...treesData,
@@ -197,6 +204,7 @@ function MapboxMap() {
     setPendingCoords(null);
   };
 
+  //deletes tree
   const handleDeleteTree = (id) => {
     if (!treesData) return;
     const newFeatures = treesData.features.filter(
@@ -205,6 +213,34 @@ function MapboxMap() {
     setTreesData({ ...treesData, features: newFeatures });
     setSelectedTree(null);
   };
+
+  //toggles visibility of zoneamento layer
+  const toggleZoneamento = () => {
+    if (!mapRef.current) return;
+
+    const visibility = mapRef.current.getLayoutProperty(
+      "zoneamento-layer",
+      "visibility"
+    );
+
+    if (visibility === "visible") {
+      mapRef.current.setLayoutProperty(
+        "zoneamento-layer",
+        "visibility",
+        "none"
+      );
+      setZoneamentoVisible(false);
+    } else {
+      mapRef.current.setLayoutProperty(
+        "zoneamento-layer",
+        "visibility",
+        "visible"
+      );
+      setZoneamentoVisible(true);
+    }
+  };
+
+  //final html
   return (
     <div className="map">
       <Toolbar
@@ -214,6 +250,8 @@ function MapboxMap() {
         onSaveTree={handleSaveTree}
         onCancelAdd={() => setPendingCoords(null)}
         AddTreeAtMyLocation={handleAddTreeAtMyLocation}
+        onShowZoneamento={toggleZoneamento}
+        zoneamentoVisible={zoneamentoVisible}
       />
 
       <div ref={mapContainerRef} className="map-container" />
