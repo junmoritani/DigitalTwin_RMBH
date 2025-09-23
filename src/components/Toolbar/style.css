@@ -10,6 +10,7 @@
 }
 .addTreeButtons-container {
   display: flex;
+  flex-direction: column
 }
 
 .layerButtons-container {
