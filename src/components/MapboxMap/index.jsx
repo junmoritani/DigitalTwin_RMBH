@@ -18,6 +18,7 @@ function MapboxMap() {
 
   const [addMode, setAddMode] = useState(false);
   const [pendingCoords, setPendingCoords] = useState(null);
+  const [showAddOptions, setShowAddOptions] = useState(false);
 
   // checks mapbox token
   useEffect(() => {
@@ -146,15 +147,29 @@ function MapboxMap() {
       }
     });
 
-    // add tree mode
+    // ____________________________________________________ add tree mode
     mapRef.current.on("click", (e) => {
       if (!addModeRef.current) return;
       setPendingCoords([e.lngLat.lng, e.lngLat.lat]);
-      setAddMode(false);
+      // setAddMode(false);
     });
 
     return () => mapRef.current?.remove();
   }, []);
+
+  // useEffect(() => {
+  //   if (!mapRef.current) return;
+
+  //   const handleClick = (e) => {
+  //     if (!addModeRef.current) return;
+  //     const coords = [e.lngLat.lng, e.lngLat.lat];
+  //     setPendingCoords(coords);
+  //     setAddMode(false);
+  //   };
+
+  //   mapRef.current.on("click", handleClick);
+  //   return () => mapRef.current.off("click", handleClick);
+  // }, []);
 
   useEffect(() => {
     addModeRef.current = addMode;
@@ -168,29 +183,35 @@ function MapboxMap() {
     }
   }, [treesData]);
 
-  //choosing location of new tree in the map
+  // Selecionar no mapa
+  const handleAddTreeOnMap = () => {
+    setAddMode(true);
+    setShowAddOptions(false);
+    alert("Clique no mapa para escolher a localização da árvore");
+  };
+
+  //__________________________________________________choosing location of new tree in the map
   const handleAddTreeAtMyLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      console.warn("Geolocation not supported, fallback to map");
+      handleAddTreeOnMap();
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+        const coords = [longitude, latitude];
 
-        // Save coordinates to state so AddTreeForm can use them
-        setPendingCoords([longitude, latitude]);
-        setAddMode(true); // open the form right away if you want
+        setPendingCoords(coords);
+        setAddMode(false);
+        setShowAddOptions(false);
 
-        // Fly the map to the new point
-        mapRef.current?.flyTo({
-          center: [longitude, latitude],
-          zoom: 18,
-        });
+        mapRef.current?.flyTo({ center: coords, zoom: 18 });
       },
       (error) => {
         console.error("Error getting location:", error);
-        alert("Could not get your location");
+        handleAddTreeOnMap(); // fallback automático
       }
     );
   };
@@ -201,6 +222,12 @@ function MapboxMap() {
       ...treesData,
       features: [...treesData.features, newTree],
     });
+    setAddMode(false);
+    setPendingCoords(null);
+  };
+
+  const handleCancelSaveTree = () => {
+    setAddMode(false);
     setPendingCoords(null);
   };
 
@@ -247,11 +274,13 @@ function MapboxMap() {
         addMode={addMode}
         setAddMode={setAddMode}
         pendingCoords={pendingCoords}
+        setPendingCoords={setPendingCoords}
+        handleAddTreeOnMap={handleAddTreeOnMap}
+        handleAddTreeAtMyLocation={handleAddTreeAtMyLocation}
+        showAddOptions={showAddOptions}
+        setShowAddOptions={setShowAddOptions}
         onSaveTree={handleSaveTree}
-        onCancelAdd={() => setPendingCoords(null)}
-        AddTreeAtMyLocation={handleAddTreeAtMyLocation}
-        onShowZoneamento={toggleZoneamento}
-        zoneamentoVisible={zoneamentoVisible}
+        onCancelAdd={handleCancelSaveTree}
       />
 
       <div ref={mapContainerRef} className="map-container" />

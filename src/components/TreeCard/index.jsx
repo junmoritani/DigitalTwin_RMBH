@@ -14,9 +14,9 @@ function TreeCard({ tree, onClose, onDelete }) {
         heading={151}
         fov={110}
       />
-      //Mudar a referencia da imagem do street view para endereço ou outra coisa
+      {/* // Mudar a referencia da imagem do street view para endereço ou outra coisa
       porque a tree só passa as propriedades, e as coordenadas da geometria está
-      fora disso. Também talvez seja possivel usar as coordenadas sirgas 2000
+      fora disso. Também talvez seja possivel usar as coordenadas sirgas 2000 */}
       <div>
         <p>
           <strong>Tipo:</strong> {tree.TIPO_INDIVIDUO || "N/A"}
