@@ -202,53 +202,52 @@ function MapboxMap() {
     alert("Clique no mapa para escolher a localização da árvore");
   };
 
-  
-const handleAddTreeAtMyLocation = () => {
-  if (!navigator.geolocation) {
+  const handleAddTreeAtMyLocation = () => {
+    if (!navigator.geolocation) {
       console.warn("Geolocation not supported, fallback to manual mode");
       handleAddTreeOnMap();
       return;
-  }
+    }
 
-  navigator.geolocation.getCurrentPosition(
+    navigator.geolocation.getCurrentPosition(
       (position) => {
-          const { latitude, longitude } = position.coords;
-          const coords = [longitude, latitude];
-          const map = mapRef.current;
-          if (!map) return;
+        const { latitude, longitude } = position.coords;
+        const coords = [longitude, latitude];
+        const map = mapRef.current;
+        if (!map) return;
 
-          // --- REMOVE Marker logic from here if you want to use the layer dot ---
+        // --- REMOVE Marker logic from here if you want to use the layer dot ---
 
-          // Set state
-          setAddMode(true);
-          setShowAddOptions(false);
-          setPendingCoords(coords);
+        // Set state
+        setAddMode(true);
+        setShowAddOptions(false);
+        setPendingCoords(coords);
 
-          // 🌟 NEW: Update the 'pending-tree' GeoJSON source
-          const pendingSource = map.getSource("pending-tree");
-          if (pendingSource) {
-              pendingSource.setData({
-                  type: "FeatureCollection",
-                  features: [
-                      {
-                          type: "Feature",
-                          geometry: { type: "Point", coordinates: coords },
-                          properties: {},
-                      },
-                  ],
-              });
-              console.log("Updated pending-tree source for layer dot.");
-          }
-          // --------------------------------------------------------------------
+        // 🌟 NEW: Update the 'pending-tree' GeoJSON source
+        const pendingSource = map.getSource("pending-tree");
+        if (pendingSource) {
+          pendingSource.setData({
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                geometry: { type: "Point", coordinates: coords },
+                properties: {},
+              },
+            ],
+          });
+          console.log("Updated pending-tree source for layer dot.");
+        }
+        // --------------------------------------------------------------------
 
-          // Then fly to location
-          map.flyTo({ center: coords, zoom: 18 });
+        // Then fly to location
+        map.flyTo({ center: coords, zoom: 18 });
 
-          // Since you are using a LAYER dot, you might need a different drag/update mechanism
-          // or perhaps you intended to use the Marker (see alternative below).
-          
-          // For now, let's remove the marker/drag logic that won't work without the marker:
-          /*
+        // Since you are using a LAYER dot, you might need a different drag/update mechanism
+        // or perhaps you intended to use the Marker (see alternative below).
+
+        // For now, let's remove the marker/drag logic that won't work without the marker:
+        /*
           const marker = new mapboxgl.Marker({
             color: "#FFA500",
             draggable: true,
@@ -257,55 +256,54 @@ const handleAddTreeAtMyLocation = () => {
             .addTo(map);
           // ... all subsequent marker creation, drag, click, and cleanup logic ...
           */
-          
-          // To allow adding/moving the layer dot with clicks, ensure addMode is set:
-          // The existing `setupMapClickHandlers` will handle subsequent clicks 
-          // once `addMode` is `true`.
 
+        // To allow adding/moving the layer dot with clicks, ensure addMode is set:
+        // The existing `setupMapClickHandlers` will handle subsequent clicks
+        // once `addMode` is `true`.
       },
       (error) => {
-          console.error("Error getting location:", error);
-          handleAddTreeOnMap();
+        console.error("Error getting location:", error);
+        handleAddTreeOnMap();
       }
-  );
-};
+    );
+  };
 
-const handleSaveTree = (newTree) => {
-  // ... existing code for saving tree ...
-  setTreesData({
-    ...treesData,
-    features: [...treesData.features, newTree],
-  });
-  setAddMode(false);
-  setPendingCoords(null);
+  const handleSaveTree = (newTree) => {
+    // ... existing code for saving tree ...
+    setTreesData({
+      ...treesData,
+      features: [...treesData.features, newTree],
+    });
+    setAddMode(false);
+    setPendingCoords(null);
 
-  // 🌟 NEW: Clear the GeoJSON source data
-  const map = mapRef.current;
-  const pendingSource = map.getSource("pending-tree");
-  if (pendingSource) {
+    // 🌟 NEW: Clear the GeoJSON source data
+    const map = mapRef.current;
+    const pendingSource = map.getSource("pending-tree");
+    if (pendingSource) {
       pendingSource.setData({ type: "FeatureCollection", features: [] });
-  }
+    }
 
-  if (previewMarkerRef.current) {
-    previewMarkerRef.current.cleanup?.();
-  }
-};
+    if (previewMarkerRef.current) {
+      previewMarkerRef.current.cleanup?.();
+    }
+  };
 
-const handleCancelSaveTree = () => {
-  setAddMode(false);
-  setPendingCoords(null);
+  const handleCancelSaveTree = () => {
+    setAddMode(false);
+    setPendingCoords(null);
 
-  // 🌟 NEW: Clear the GeoJSON source data
-  const map = mapRef.current;
-  const pendingSource = map.getSource("pending-tree");
-  if (pendingSource) {
+    // 🌟 NEW: Clear the GeoJSON source data
+    const map = mapRef.current;
+    const pendingSource = map.getSource("pending-tree");
+    if (pendingSource) {
       pendingSource.setData({ type: "FeatureCollection", features: [] });
-  }
+    }
 
-  if (previewMarkerRef.current) {
-    previewMarkerRef.current.cleanup?.();
-  }
-};
+    if (previewMarkerRef.current) {
+      previewMarkerRef.current.cleanup?.();
+    }
+  };
 
   const handleDeleteTree = (id) => {
     if (!treesData) return;
@@ -341,7 +339,7 @@ const handleCancelSaveTree = () => {
         setShowAddOptions={setShowAddOptions}
         onSaveTree={handleSaveTree}
         onCancelAdd={handleCancelSaveTree}
-        onShowZoneamento ={toggleZoneamento}
+        onShowZoneamento={toggleZoneamento}
         zoneamentoVisible={zoneamentoVisible}
       />
 

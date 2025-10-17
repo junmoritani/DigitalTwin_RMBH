@@ -1,7 +1,10 @@
 import AddTreeButton from "../AddTreeButton";
 import AddTreeForm from "../AddTreeForm";
 import LayerButton from "../LayerButton";
+import { IoLayers } from "react-icons/io5";
+import { BiSolidPencil } from "react-icons/bi";
 import "./style.css";
+import Button from "../Button";
 
 function Toolbar({
   addMode,
@@ -19,12 +22,26 @@ function Toolbar({
   setShowAddOptions,
 }) {
   return (
-    <div className="toolbar">
+    <div className="flex flex-col bg-gray-50 ">
       <div className="addTreeButtons-container">
         {/* <AddTreeButton addMode={addMode} setAddMode={setAddMode} />
         <button onClick={AddTreeAtMyLocation}>
           📍 Add Tree at My Location
         </button> */}
+        <div className="flex gap-5 w-80">
+          <Button
+            variant="secondary"
+            text="Camadas"
+            Icon={IoLayers} // <-- Pass the imported component
+            onClick={() => console.log("New Item added!")}
+          />
+          <Button
+            variant="secondary"
+            text="Editar Mapa"
+            Icon={BiSolidPencil} // <-- Pass the imported component
+            onClick={() => console.log("New Item added!")}
+          />
+        </div>
         <button onClick={() => setShowAddOptions(true)}>
           Adicionar árvore
         </button>
