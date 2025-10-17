@@ -1,4 +1,4 @@
-.map {
+/* .map {
   width: 100%;
   height: 100%;
   display: flex;
@@ -8,4 +8,12 @@
 }
 .map-container {
   flex-grow: 1;
+} */
+
+.mapboxgl-canvas-container {
+  height: 100%;
+  outline: none;
+}
+.mapboxgl-canvas {
+  height: 100%;
 }

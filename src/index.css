@@ -1,4 +1,17 @@
-:root {
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+
+@import "tailwindcss";
+
+
+@theme {
+  --color-PrimaryLight: #3B755F;
+  --color-PrimaryDark: #1D372E;
+  --font-montserrat: 'Montserrat', sans-serif;
+}
+
+/* :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -65,4 +78,4 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
-}
+} */

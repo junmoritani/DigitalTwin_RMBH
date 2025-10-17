@@ -1,9 +1,16 @@
-.compHeader {
-  width: 60px;
-  height: auto;
-  background-color: white;
+/* .header {
+  
+  height: 60px;
+  background-color: #1D372E;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: space-between;
-  padding: 100px 0 0 0;
+  align-items: center;
+  
+  
 }
+
+.header-links{
+  display: flex;
+  flex-direction: row
+} */

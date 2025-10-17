@@ -329,7 +329,7 @@ const handleCancelSaveTree = () => {
 
   // ==================== RENDER ====================
   return (
-    <div className="map">
+    <div className="w-full h-full flex flex-row grow overflow-hidden ">
       <Toolbar
         addMode={addMode}
         setAddMode={setAddMode}
@@ -345,7 +345,7 @@ const handleCancelSaveTree = () => {
         zoneamentoVisible={zoneamentoVisible}
       />
 
-      <div ref={mapContainerRef} className="map-container" />
+      <div ref={mapContainerRef} className="map-container flex-grow" />
 
       {selectedTree && (
         <TreeCard
