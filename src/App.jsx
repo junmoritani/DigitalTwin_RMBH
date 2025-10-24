@@ -12,7 +12,7 @@ function App() {
         {/* <CesiumMap /> */}
         {/* <LeafLetMap /> */}
         <MapboxMap />
-        <div>oi</div>
+        
       </div>
     </>
   );

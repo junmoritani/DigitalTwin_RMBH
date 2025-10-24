@@ -2,13 +2,14 @@ import "./style.css";
 
 function LayerButton({ showLayer, zoneamentoVisible }) {
   return (
-    <div className="bt-container">
-      <div className="imageLayer"></div>
+    <div className=" ">
+      
       <button
-        className={`toggle-btn ${zoneamentoVisible ? "active" : ""}`}
+        className={` p-3 gap-5 flex w-full h-full rounded-md hover:bg-gray-100 ${zoneamentoVisible ? "bg-gray-200" : ""}`}
         onClick={() => showLayer(true)}
       >
-        {zoneamentoVisible ? "Hide Zoneamento" : "Show Zoneamento"}
+        <div className="w-6 h-6 rounded-md bg-gray-300"></div>
+        Zoneamento
       </button>
     </div>
   );

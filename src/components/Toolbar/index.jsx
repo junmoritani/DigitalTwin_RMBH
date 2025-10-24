@@ -22,13 +22,13 @@ function Toolbar({
   setShowAddOptions,
 }) {
   return (
-    <div className="flex flex-col bg-gray-50 ">
+    <div className="flex flex-col p-3 bg-gray-50 ">
       <div className="addTreeButtons-container">
         {/* <AddTreeButton addMode={addMode} setAddMode={setAddMode} />
         <button onClick={AddTreeAtMyLocation}>
           📍 Add Tree at My Location
         </button> */}
-        <div className="flex gap-5 w-80">
+        <div className="flex gap-3 w-80">
           <Button
             variant="secondary"
             text="Camadas"
@@ -39,12 +39,15 @@ function Toolbar({
             variant="secondary"
             text="Editar Mapa"
             Icon={BiSolidPencil} // <-- Pass the imported component
-            onClick={() => console.log("New Item added!")}
+            onClick={() => setShowAddOptions(true)}
           />
         </div>
-        <button onClick={() => setShowAddOptions(true)}>
-          Adicionar árvore
-        </button>
+        
+        <Button
+            variant="secondary"
+            text="Adicionar árvore"
+            onClick={() => setShowAddOptions(true)}
+          />
 
         {showAddOptions && (
           <div className="add-options">
@@ -63,7 +66,8 @@ function Toolbar({
           />
         )}
       </div>
-      <div className="layerButtons-container">
+      <div className="flex flex-col p-3 gap-3 rounded-md bg-white">
+        <h1 className=" text-PrimaryLight font-bold">condições atuais</h1>
         <LayerButton
           showLayer={onShowZoneamento}
           zoneamentoVisible={zoneamentoVisible}
