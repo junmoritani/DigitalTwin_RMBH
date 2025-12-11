@@ -22,8 +22,8 @@ function Toolbar({
   setShowAddOptions,
 }) {
   return (
-    <div className="flex flex-col p-3 bg-gray-50 ">
-      <div className="addTreeButtons-container">
+    <div className="flex flex-col justify-between p-3 bg-gray-50 h-full">
+      <div className="addTreeButtons-container h-full">
         {/* <AddTreeButton addMode={addMode} setAddMode={setAddMode} />
         <button onClick={AddTreeAtMyLocation}>
           📍 Add Tree at My Location
