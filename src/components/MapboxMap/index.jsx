@@ -327,7 +327,7 @@ function MapboxMap() {
 
   // ==================== RENDER ====================
   return (
-    <div className="w-full h-full flex flex-row grow overflow-hidden ">
+    <div className="w-full h-full flex min-h-0 flex-row grow overflow-hidden ">
       <Toolbar
         addMode={addMode}
         setAddMode={setAddMode}
@@ -343,7 +343,7 @@ function MapboxMap() {
         zoneamentoVisible={zoneamentoVisible}
       />
 
-      <div ref={mapContainerRef} className="map-container flex-grow" />
+      <div ref={mapContainerRef} className="map-container" />
 
       {selectedTree && (
         <TreeCard

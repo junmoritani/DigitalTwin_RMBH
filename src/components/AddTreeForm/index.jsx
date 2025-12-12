@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import mapboxgl from "mapbox-gl";
 import "./style.css";
 import InputField from "../InputField";
+import Button from "../Button";
+import { MdPhotoCamera } from "react-icons/md";
 
 function AddTreeForm({ coords, onSave, onCancel }) {
   const [formData, setFormData] = useState({
@@ -88,13 +90,18 @@ function AddTreeForm({ coords, onSave, onCancel }) {
   }, [coords, TOKEN]);
 
   return (
-    <div className=" flex flex-col h-full bg-amber-200">
-      <h3>incluir uma nova árvore</h3>
-      <form onSubmit={handleSubmit} className="flex flex-col h-full justify-between ">
-        <div className="overflow-y-scroll flex-1 grow">
+    <div className=" flex flex-col h-full min-h-0 ">
+      <h3 className="flex-none p-4">incluir uma nova árvore</h3>
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col flex-1 min-h-0 justify-between "
+      >
+        <div className="flex-1 flex flex-col gap-5 overflow-y-auto min-h-0  p-2">
           <div className="bg-white p-2 flex flex-col gap-7 rounded-md ">
-            <div><h2 className="text-xl font-semibold">identificação</h2>
-              <hr className=" border-gray-200 border-1 " /></div>
+            <div>
+              <h2 className="text-xl font-semibold">identificação</h2>
+              <hr className=" border-gray-200 border-1 " />
+            </div>
 
             <InputField
               id="name-field"
@@ -106,25 +113,33 @@ function AddTreeForm({ coords, onSave, onCancel }) {
               value={formData.nomePopular}
               onChange={handleChange}
             />
-            <div><label htmlFor="classEspecial" className=' font-semibold text-gray-500' >classificação especial</label> <span className="text-gray-400 text-sm"> opcional</span>
+            <div>
+              <label
+                htmlFor="classEspecial"
+                className=" font-semibold text-gray-500"
+              >
+                classificação especial
+              </label>{" "}
+              <span className="text-gray-400 text-sm"> opcional</span>
               <select
                 id="class-field"
                 name="classEspecial"
                 className="bg-gray-100 p-2  text-gray-900 border-1 pl-3  border-gray-300 rounded-md w-full"
                 value={formData.classEspecial}
                 onChange={handleChange}
-
               >
                 <option value=""> </option>
                 <option value="muda">Muda</option>
                 <option value="mvm">Monumento vegetal municipal</option>
                 <option value="matriz">Matriz</option>
-              </select></div>
-
+              </select>
+            </div>
           </div>
           <div className="bg-white p-2 flex flex-col gap-5 rounded-md ">
-            <div><h2 className="text-xl font-semibold">endereço de referência</h2>
-              <hr className=" border-gray-200 border-1 " /></div>
+            <div>
+              <h2 className="text-xl font-semibold">endereço de referência</h2>
+              <hr className=" border-gray-200 border-1 " />
+            </div>
 
             <InputField
               id="logradouro-field"
@@ -160,14 +175,20 @@ function AddTreeForm({ coords, onSave, onCancel }) {
                 onChange={handleChange}
               />
             </div>
-            <div><label htmlFor="localPlantio" className=' font-semibold text-gray-500'>Local de plantio</label> <span className="text-gray-400 text-sm"> opcional</span>
+            <div>
+              <label
+                htmlFor="localPlantio"
+                className=" font-semibold text-gray-500"
+              >
+                Local de plantio
+              </label>{" "}
+              <span className="text-gray-400 text-sm"> opcional</span>
               <select
                 id="localPlantio"
                 name="LOCAL_PLANTIO"
                 className="bg-gray-100 p-2  text-gray-900 border-1 pl-3  border-gray-300 rounded-md w-full"
                 value={formData.LOCAL_PLANTIO}
                 onChange={handleChange}
-
               >
                 <option value="">Selecione um local</option>
                 <option value="calçada">Calçada</option>
@@ -176,10 +197,60 @@ function AddTreeForm({ coords, onSave, onCancel }) {
                 <option value="parque">Parque</option>
                 <option value="interna ao lote">Interna ao Lote</option>
                 <option value="faixa de rolamento">Faixa de Rolamento</option>
-              </select></div>
+              </select>
+            </div>
+          </div>
+          <div className="bg-white p-2 flex flex-col gap-5 rounded-md ">
+            <div>
+              <h2 className="text-xl font-semibold">para novos plantios</h2>
+              <hr className=" border-gray-200 border-1 " />
+            </div>
+            <div className="flex flex-col ">
+              <label className="font-semibold text-gray-500">
+                É um novo plantio?
+              </label>
+
+              <div className="flex gap-4">
+                {/* Option: YES */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="isNovoPlantio" // Must match for both
+                    value="yes"
+                    checked={formData.isNovoPlantio === "yes"}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-yellow-800 focus:ring-yellow-800"
+                  />
+                  <span>Sim</span>
+                </label>
+
+                {/* Option: NO */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="isNovoPlantio" // Must match for both
+                    value="no"
+                    checked={formData.isNovoPlantio === "no"}
+                    onChange={handleChange}
+                    className="w-4 h-4 text-yellow-800 focus:ring-yellow-800"
+                  />
+                  <span>Não</span>
+                </label>
+              </div>
+            </div>
+            <InputField
+              id="padrinho-field"
+              label="padrinho / madrinha"
+              name="RESPONSAVEL"
+              type="text"
+              IsOpcional={true}
+              placeholder=""
+              value={formData.RESPONSAVEL}
+              onChange={handleChange}
+            />
           </div>
 
-          <div className="h-160 bg-black">
+          <div className="">
             <InputField
               id="obs-field"
               label="Observações"
@@ -192,11 +263,19 @@ function AddTreeForm({ coords, onSave, onCancel }) {
             />
           </div>
         </div>
-        <div className="bg-yellow-800 flex-none">
-          <button type="submit">Salvar</button>
-          <button type="button" onClick={onCancel}>
-            Cancelar
-          </button>
+        <div className="flex-none ">
+          <div className="w-full flex flex-col p-4">
+            <Button
+              variant="complementary"
+              text="carregar uma foto"
+              Icon={MdPhotoCamera}
+              onClick={() => console.log("New Item added!")}
+            />
+          </div>
+          <div className="w-full flex flex-col p-4 gap-3">
+            <Button variant="primary" text="enviar" type="submit" />
+            <Button variant="secondary" text="cancelar" onClick={onCancel} />
+          </div>
         </div>
       </form>
     </div>

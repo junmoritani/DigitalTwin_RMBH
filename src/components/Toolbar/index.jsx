@@ -22,8 +22,8 @@ function Toolbar({
   setShowAddOptions,
 }) {
   return (
-    <div className="flex flex-col justify-between p-3 bg-gray-50 h-full">
-      <div className="addTreeButtons-container h-full">
+    <div className="flex flex-col justify-between p-3 bg-gray-50 min-h-0 h-full">
+      <div className="addTreeButtons-container min-h-0 h-full">
         {/* <AddTreeButton addMode={addMode} setAddMode={setAddMode} />
         <button onClick={AddTreeAtMyLocation}>
           📍 Add Tree at My Location
@@ -42,12 +42,12 @@ function Toolbar({
             onClick={() => setShowAddOptions(true)}
           />
         </div>
-        
+
         <Button
-            variant="secondary"
-            text="Adicionar árvore"
-            onClick={() => setShowAddOptions(true)}
-          />
+          variant="secondary"
+          text="Adicionar árvore"
+          onClick={() => setShowAddOptions(true)}
+        />
 
         {showAddOptions && (
           <div className="add-options">
@@ -66,7 +66,7 @@ function Toolbar({
           />
         )}
       </div>
-      <div className="flex flex-col p-3 gap-3 rounded-md bg-white">
+      <div className="flex flex-col p-3 gap-3 flex-none rounded-md bg-white">
         <h1 className=" text-PrimaryLight font-bold">condições atuais</h1>
         <LayerButton
           showLayer={onShowZoneamento}

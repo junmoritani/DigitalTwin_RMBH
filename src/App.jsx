@@ -7,12 +7,11 @@ import Header from "./components/Header";
 function App() {
   return (
     <>
-      <div className=" font-montserrat h-full flex flex-col  ">
+      <div className=" font-montserrat w-screen h-screen flex flex-col  ">
         <Header />
         {/* <CesiumMap /> */}
         {/* <LeafLetMap /> */}
         <MapboxMap />
-        
       </div>
     </>
   );

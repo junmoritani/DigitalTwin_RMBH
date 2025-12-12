@@ -28,6 +28,10 @@ function Button({
       variantStyles =
         "bg-PrimaryLight text-white hover:bg-PrimaryDark focus:ring-indigo-300 shadow-md hover:shadow-lg";
       break;
+    case "complementary":
+      variantStyles =
+        "bg-blue-900 border-2 border-gray-200 text-white hover:bg-gray-300 focus:ring-gray-300";
+      break;
   }
 
   // 2. Render icon logic
@@ -36,7 +40,7 @@ function Button({
     // React components passed as props (like lucide-react icons) automatically accept
     // standard SVG attributes like className, size, and color.
     <Component
-      className={`w-5 h-5  ${isLoader ? "animate-spin" : ""}`}
+      className={`w-5 h-5 bg-  ${isLoader ? "animate-spin" : ""}`}
       aria-hidden="true"
     />
   );
