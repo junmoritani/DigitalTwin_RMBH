@@ -1,11 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "./style.css";
 import InputField from "../InputField";
 import Button from "../Button";
-import { MdPhotoCamera } from "react-icons/md";
+import { MdPhotoCamera, MdDelete } from "react-icons/md";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
-function AddTreeForm({ coords, onSave, onCancel }) {
+const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+mapboxgl.accessToken = TOKEN;
+
+function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+
+  // States para a Foto
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const fileInputRef = useRef(null); // Referência para o input invisível
+
   const [formData, setFormData] = useState({
     NOME_POPULAR: "",
     LOCAL_PLANTIO: "",
@@ -13,13 +24,44 @@ function AddTreeForm({ coords, onSave, onCancel }) {
     NUMERO_REFERENCIA: "",
     CEP: "",
     OBSERVACOES: "",
+    CLASS_ESPECIAL: "",
+    NOVO_PLANTIO: "no",
+    RESPONSAVEL: ""
   });
-
-  const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-  mapboxgl.accessToken = TOKEN;
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  // 📸 Lógica de Captura
+  const handlePhotoSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setPhotoFile(file);
+      // Cria uma URL temporária para mostrar o preview sem upload
+      const objectUrl = URL.createObjectURL(file);
+      setPhotoPreview(objectUrl);
+    }
+  };
+
+  // 📸 Lógica de Remoção
+  const handleRemovePhoto = () => {
+    setPhotoFile(null);
+    setPhotoPreview(null);
+    // Limpa o input para permitir selecionar a mesma foto novamente se quiser
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // 📸 Limpeza de Memória (Evita Memory Leak do ObjectURL)
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  // Função auxiliar para disparar o input oculto
+  const triggerCamera = () => {
+    fileInputRef.current.click();
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,25 +73,32 @@ function AddTreeForm({ coords, onSave, onCancel }) {
         ID: Date.now(),
         ID_ARVORE_SIIA: null,
         TIPO_INDIVIDUO: "Árvore",
-        LOCAL_PLANTIO: formData.LOCAL_PLANTIO || "Desconhecido",
         LOGRADOURO_REFERENCIA: formData.LOGRADOURO_REFERENCIA || "Novo",
         NUMERO_REFERENCIA: formData.NUMERO_REFERENCIA || "",
-        LOCAL_REFERENCIA: null,
-        NOME_CIENTIFICO: formData.NOME_CIENTIFICO || "Desconhecido",
-        NOME_POPULAR: formData.NOME_POPULAR || "Nova árvore",
-        OBSERVACOES: formData.OBSERVACOES || "",
         CEP: formData.CEP || "",
-        DATA_LEVANTAMENTO: new Date().toLocaleString(),
-        ORGAO_LEVANTAMENTO: "Usuário",
+        LOCAL_PLANTIO: formData.LOCAL_PLANTIO || "Desconhecido",
+        NOME_POPULAR: formData.NOME_POPULAR || "Nova árvore",
+        CLASS_ESPECIAL: formData.CLASS_ESPECIAL || "N/A",
+        NOVO_PLANTIO: formData.NOVO_PLANTIO || "não informado",
+        RESPONSAVEL: formData.RESPONSAVEL || "não informado",
+        OBSERVACOES: formData.OBSERVACOES || "",
+        DATA_LEVANTAMENTO: new Date().toLocaleString("pt-BR"), // Locale BR
+        ORGAO_LEVANTAMENTO: "Colaborativo", // Sugestão: diferenciar do oficial
       },
+      // 📸 Adicionamos o arquivo separadamente ou dentro de properties 
+      // (depende de como seu backend espera receber, mas aqui envio junto)
+      file: photoFile
     };
 
     onSave(newTree);
   };
 
-  // 🔹 Reverse geocoding ao receber coords
+  // 🔹 Reverse geocoding com Loading State e Race Condition Protection
   useEffect(() => {
     if (!coords) return;
+
+    let active = true; // Flag para evitar condições de corrida
+    setIsLoadingAddress(true);
 
     const fetchAddressFromCoords = async ([lng, lat]) => {
       try {
@@ -58,13 +107,15 @@ function AddTreeForm({ coords, onSave, onCancel }) {
         );
         const data = await res.json();
 
-        if (data.features && data.features.length > 0) {
+        if (active && data.features && data.features.length > 0) {
           const place = data.features[0];
           const context = place.context || [];
 
+          // Lógica refinada para extração
           const road = place.place_type.includes("address")
             ? place.text
-            : context.find((c) => c.id.startsWith("street"))?.text || "";
+            : context.find((c) => c.id.startsWith("street")) ?.text ||
+              place.text || ""; // Fallback para o nome do lugar se não achar rua
 
           const houseNumber =
             place.place_type.includes("address") && place.address
@@ -72,7 +123,7 @@ function AddTreeForm({ coords, onSave, onCancel }) {
               : "";
 
           const postcode =
-            context.find((c) => c.id.startsWith("postcode"))?.text || "";
+            context.find((c) => c.id.startsWith("postcode")) ?.text || "";
 
           setFormData((prev) => ({
             ...prev,
@@ -83,63 +134,48 @@ function AddTreeForm({ coords, onSave, onCancel }) {
         }
       } catch (err) {
         console.error("Erro ao buscar endereço:", err);
+      } finally {
+        if (active) setIsLoadingAddress(false);
       }
     };
 
     fetchAddressFromCoords(coords);
-  }, [coords, TOKEN]);
+
+    return () => {
+      active = false; // Cleanup
+    };
+  }, [coords]);
 
   return (
-    <div className=" flex flex-col h-full min-h-0 ">
-      <h3 className="flex-none p-4">incluir uma nova árvore</h3>
+    <div className=" flex flex-col h-full min-h-0 bg-gray-50">
+      <h3 className="flex-none p-5 text-lg uppercase font-normal text-gray-800">incluir uma nova árvore</h3>
       <form
         onSubmit={handleSubmit}
         className="flex flex-col flex-1 min-h-0 justify-between "
       >
-        <div className="flex-1 flex flex-col gap-5 overflow-y-auto min-h-0  p-2">
-          <div className="bg-white p-2 flex flex-col gap-7 rounded-md ">
-            <div>
-              <h2 className="text-xl font-semibold">identificação</h2>
-              <hr className=" border-gray-200 border-1 " />
-            </div>
+        <div className="flex-1 flex flex-col gap-4 overflow-y-auto min-h-0  p-3">
 
-            <InputField
-              id="name-field"
-              label="nome popular"
-              name="nomePopular"
-              type="text"
-              IsOpcional={true}
-              placeholder=""
-              value={formData.nomePopular}
-              onChange={handleChange}
-            />
-            <div>
-              <label
-                htmlFor="classEspecial"
-                className=" font-semibold text-gray-500"
-              >
-                classificação especial
-              </label>{" "}
-              <span className="text-gray-400 text-sm"> opcional</span>
-              <select
-                id="class-field"
-                name="classEspecial"
-                className="bg-gray-100 p-2  text-gray-900 border-1 pl-3  border-gray-300 rounded-md w-full"
-                value={formData.classEspecial}
-                onChange={handleChange}
-              >
-                <option value=""> </option>
-                <option value="muda">Muda</option>
-                <option value="mvm">Monumento vegetal municipal</option>
-                <option value="matriz">Matriz</option>
-              </select>
-            </div>
-          </div>
+          {/* GRUPO ENDEREÇO */}
           <div className="bg-white p-2 flex flex-col gap-5 rounded-md ">
             <div>
               <h2 className="text-xl font-semibold">endereço de referência</h2>
               <hr className=" border-gray-200 border-1 " />
             </div>
+            <Button
+              variant="secondary"
+              text="Usar minha localização atual"
+              onClick={(e) => {
+                e.preventDefault(); // Importante para não submeter o form
+                onAddTreeAtMyLocation();
+              }}
+            />
+            {/* Feedback visual de loading */}
+            {isLoadingAddress && (
+              <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                <AiOutlineLoading3Quarters className="animate-spin" />
+                Buscando endereço exato...
+               </div>
+            )}
 
             <InputField
               id="logradouro-field"
@@ -150,47 +186,53 @@ function AddTreeForm({ coords, onSave, onCancel }) {
               placeholder=""
               value={formData.LOGRADOURO_REFERENCIA}
               onChange={handleChange}
+              disabled={isLoadingAddress} // UX: Evita edição durante fetch
             />
 
             <div className="flex flex-row gap-10">
-              <InputField
-                id="numero-field"
-                label="número"
-                name="NUMERO_REFERENCIA"
-                type="text"
-                IsOpcional={false}
-                placeholder=""
-                value={formData.NUMERO_REFERENCIA}
-                onChange={handleChange}
-              />
-
-              <InputField
-                id="cep-field"
-                label="CEP"
-                name="CEP"
-                type="text"
-                IsOpcional={true}
-                placeholder=""
-                value={formData.CEP}
-                onChange={handleChange}
-              />
+              <div className="w-1/3">
+                <InputField
+                  id="numero-field"
+                  label="número"
+                  name="NUMERO_REFERENCIA"
+                  type="text"
+                  IsOpcional={false}
+                  placeholder=""
+                  value={formData.NUMERO_REFERENCIA}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="w-2/3">
+                <InputField
+                  id="cep-field"
+                  label="CEP"
+                  name="CEP"
+                  type="text"
+                  IsOpcional={true}
+                  placeholder=""
+                  value={formData.CEP}
+                  onChange={handleChange}
+                />
+              </div>
             </div>
+
             <div>
               <label
                 htmlFor="localPlantio"
                 className=" font-semibold text-gray-500"
               >
                 Local de plantio
-              </label>{" "}
+              </label>
               <span className="text-gray-400 text-sm"> opcional</span>
               <select
                 id="localPlantio"
                 name="LOCAL_PLANTIO"
-                className="bg-gray-100 p-2  text-gray-900 border-1 pl-3  border-gray-300 rounded-md w-full"
+                className="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded-md p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white 
+                resize-none transition-all"
                 value={formData.LOCAL_PLANTIO}
                 onChange={handleChange}
               >
-                <option value="">Selecione um local</option>
+                <option value="">Selecione...</option>
                 <option value="calçada">Calçada</option>
                 <option value="praça">Praça</option>
                 <option value="canteiro central">Canteiro central</option>
@@ -200,9 +242,52 @@ function AddTreeForm({ coords, onSave, onCancel }) {
               </select>
             </div>
           </div>
+
+          {/* GRUPO IDENTIFICAÇÃO */}
+          <div className="bg-white p-2 flex flex-col gap-7 rounded-md ">
+            <div>
+              <h2 className="text-xl font-semibold">identificação</h2>
+              <hr className=" border-gray-200 border-1 " />
+            </div>
+
+            <InputField
+              id="name-field"
+              label="nome popular"
+              name="NOME_POPULAR"
+              type="text"
+              IsOpcional={true}
+              placeholder=""
+              value={formData.NOME_POPULAR}
+              onChange={handleChange}
+            />
+            <div>
+              <label
+                htmlFor="class-field"
+                className="font-semibold text-gray-500"
+              >
+                classificação especial
+              </label>
+              <span className="text-gray-400 text-sm"> opcional</span>
+              <select
+                id="class-field"
+                name="CLASS_ESPECIAL"
+                className="w-full bg-gray-50 text-gray-900 border border-gray-300 rounded-md p-2.5 focus:border-blue-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white 
+                resize-none transition-all"
+                value={formData.CLASS_ESPECIAL}
+                onChange={handleChange}
+              >
+                <option value="">Nenhuma</option>
+                <option value="muda">Muda</option>
+                <option value="mvm">Monumento vegetal municipal</option>
+                <option value="matriz">Matriz</option>
+              </select>
+            </div>
+          </div>
+
+          {/* GRUPO DETALHES */}
           <div className="bg-white p-2 flex flex-col gap-5 rounded-md ">
             <div>
-              <h2 className="text-xl font-semibold">para novos plantios</h2>
+              <h2 className="text-xl font-semibold tracking-wide">detalhes</h2>
               <hr className=" border-gray-200 border-1 " />
             </div>
             <div className="flex flex-col ">
@@ -215,11 +300,11 @@ function AddTreeForm({ coords, onSave, onCancel }) {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
-                    name="isNovoPlantio" // Must match for both
+                    name="NOVO_PLANTIO" // Must match for both
                     value="yes"
-                    checked={formData.isNovoPlantio === "yes"}
+                    checked={formData.NOVO_PLANTIO === "yes"}
                     onChange={handleChange}
-                    className="w-4 h-4 text-yellow-800 focus:ring-yellow-800"
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500"
                   />
                   <span>Sim</span>
                 </label>
@@ -228,11 +313,11 @@ function AddTreeForm({ coords, onSave, onCancel }) {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
-                    name="isNovoPlantio" // Must match for both
+                    name="NOVO_PLANTIO" // Must match for both
                     value="no"
-                    checked={formData.isNovoPlantio === "no"}
+                    checked={formData.NOVO_PLANTIO === "no"}
                     onChange={handleChange}
-                    className="w-4 h-4 text-yellow-800 focus:ring-yellow-800"
+                    className="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500 "
                   />
                   <span>Não</span>
                 </label>
@@ -244,37 +329,111 @@ function AddTreeForm({ coords, onSave, onCancel }) {
               name="RESPONSAVEL"
               type="text"
               IsOpcional={true}
-              placeholder=""
               value={formData.RESPONSAVEL}
               onChange={handleChange}
             />
-          </div>
-
-          <div className="">
-            <InputField
+            <div>
+            <label
+              htmlFor="obs-field"
+              className="font-semibold text-gray-500"
+            >
+              observações
+              </label>
+            <span className="text-gray-400 text-sm"> opcional</span>
+            <textarea
               id="obs-field"
-              label="Observações"
-              name="OBSERVACOES"
-              type="text"
-              IsOpcional={true}
-              placeholder=""
+              className="w-full bg-gray-100 p-2 border border-gray-300 rounded-md 
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white 
+              resize-none transition-all"
+              placeholder="Ex: Tronco com sinais de cupim, galhos baixos..."
+              rows="3"
+              name="OBSERVACOES" // Must match for both
               value={formData.OBSERVACOES}
               onChange={handleChange}
             />
           </div>
+
+          </div>
+
+          
+
+          {/* 📸 ÁREA DA FOTO (NOVA) */}
+          <div className="bg-white p-4 flex flex-col gap-4 rounded-lg shadow-sm border border-gray-100">
+            <div>
+              <h2 className="text-xl font-semibold tracking-wide ">
+                registro fotográfico
+              </h2>
+              <hr className=" border-gray-200 border-1 " />
+            </div>
+
+            {/* Input Invisível */}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment" // 💡 Isso força a câmera traseira no celular
+              ref={fileInputRef}
+              onChange={handlePhotoSelect}
+              className="hidden" // Esconde o input feio padrão
+            />
+
+            {/* Preview Area */}
+            {photoPreview ? (
+              <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 group">
+                <img
+                  src={photoPreview}
+                  alt="Preview da árvore"
+                  className="w-full h-full object-cover"
+                />
+
+                {/* Overlay com botão de deletar */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition"
+                    title="Remover foto"
+                  >
+                    <MdDelete size={24} />
+                  </button>
+                </div>
+                {/* Botão flutuante para mobile (sempre visível) */}
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="absolute top-2 right-2 bg-white/80 p-1 rounded-full text-red-600 shadow-sm md:hidden"
+                >
+                  <MdDelete size={20} />
+                </button>
+              </div>
+            ) : (
+                <div
+                  onClick={triggerCamera}
+                  className="border-2 border-dashed border-gray-300 rounded-lg h-32 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-gray-400 transition cursor-pointer"
+                >
+                  <MdPhotoCamera size={32} />
+                  <span className="text-sm mt-1">Toque para adicionar foto</span>
+                </div>
+              )}
+               <div className="w-full flex flex-col ">
+            {/* Botão Principal de Câmera (só aparece se não tiver foto ainda, opcional) */}
+            {!photoPreview && (
+              <Button
+                variant="complementary"
+                text="Tirar Foto"
+                Icon={MdPhotoCamera}
+                type="button"
+                onClick={triggerCamera}
+              />
+            )}
+          </div>
+          </div>
+
+         
         </div>
         <div className="flex-none ">
-          <div className="w-full flex flex-col p-4">
-            <Button
-              variant="complementary"
-              text="carregar uma foto"
-              Icon={MdPhotoCamera}
-              onClick={() => console.log("New Item added!")}
-            />
-          </div>
-          <div className="w-full flex flex-col p-4 gap-3">
-            <Button variant="primary" text="enviar" type="submit" />
+          <div className="grid grid-cols-2 gap-3 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
             <Button variant="secondary" text="cancelar" onClick={onCancel} />
+            <Button variant="primary" text="Salvar Árvore" type="submit" />
           </div>
         </div>
       </form>

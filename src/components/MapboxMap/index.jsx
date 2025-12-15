@@ -220,7 +220,7 @@ function MapboxMap() {
 
         // Set state
         setAddMode(true);
-        setShowAddOptions(false);
+        // setShowAddOptions(false);
         setPendingCoords(coords);
 
         // 🌟 NEW: Update the 'pending-tree' GeoJSON source

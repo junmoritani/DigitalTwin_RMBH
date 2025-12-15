@@ -16,7 +16,7 @@ function Toolbar({
   onShowZoneamento,
   zoneamentoVisible,
 
-  handleAddTreeOnMap,
+
   handleAddTreeAtMyLocation,
   showAddOptions,
   setShowAddOptions,
@@ -46,23 +46,25 @@ function Toolbar({
         <Button
           variant="secondary"
           text="Adicionar árvore"
+          // onClick={() => setShowAddOptions(true)}
           onClick={() => setShowAddOptions(true)}
         />
 
         {showAddOptions && (
           <div className="add-options">
-            <button onClick={handleAddTreeAtMyLocation}>
+            {/* <button onClick={handleAddTreeAtMyLocation}>
               📍 Na minha localização
             </button>
-            <button onClick={handleAddTreeOnMap}>🗺️ Selecionar no mapa</button>
+            <button onClick={handleAddTreeOnMap}>🗺️ Selecionar no mapa</button> */}
           </div>
         )}
 
-        {pendingCoords && (
+        {showAddOptions && (
           <AddTreeForm
             coords={pendingCoords}
             onSave={onSaveTree}
             onCancel={onCancelAdd}
+            onAddTreeAtMyLocation = {handleAddTreeAtMyLocation}
           />
         )}
       </div>
