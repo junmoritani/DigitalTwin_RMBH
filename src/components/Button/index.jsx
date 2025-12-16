@@ -6,18 +6,20 @@ function Button({
   iconPosition = "left",
   variant = "primary",
   isLoading = false,
+  isSelected = false,
   onClick,
   ...rest
 }) {
   // 1. Determine base and variant styles
   let baseStyles =
-    "flex items-center justify-center space-x-2  py-2 px-4 rounded-lg transition duration-150 ease-in-out focus:outline-none focus:ring-4 disabled:opacity-50 disabled:cursor-not-allowed";
+    "flex items-center justify-center space-x-2  py-2 px-4 rounded-lg transition duration-150 ease-in-out focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed";
   let variantStyles = "";
 
   switch (variant) {
     case "secondary":
-      variantStyles =
-        "bg-white border-2 border-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-300";
+      variantStyles = isSelected
+        ? "bg-white  border-gray-200 ring-2 ring-gray-200 hover:bg-gray-300"
+        : "bg-transparent  text-gray-800 hover:bg-gray-300";
       break;
     case "danger":
       variantStyles =
@@ -25,12 +27,14 @@ function Button({
       break;
     case "primary":
     default:
-      variantStyles =
-        "bg-PrimaryLight text-white hover:bg-PrimaryDark focus:ring-indigo-300 shadow-md hover:shadow-lg";
+      variantStyles = isSelected
+        ? "bg-PrimaryDark ring-2 ring-PrimaryLight"
+        : "bg-PrimaryLight text-white hover:bg-PrimaryDark focus:ring-indigo-300 shadow-md hover:shadow-lg";
       break;
     case "complementary":
-      variantStyles =
-        "bg-blue-900 border-2 border-gray-200 text-white hover:bg-gray-300 focus:ring-gray-300";
+      variantStyles = isSelected
+        ? "bg-PrimaryDark ring-2 ring-PrimaryLight"
+        : "bg-blue-900 border-2 border-gray-200 text-white hover:bg-gray-300";
       break;
   }
 
@@ -47,9 +51,10 @@ function Button({
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles}`}
+      className={`${baseStyles} ${variantStyles} `}
       onClick={!isLoading ? onClick : undefined} // Prevent click when loading
       disabled={isLoading}
+      aria-pressed={isSelected}
       aria-busy={isLoading}
       {...rest}
     >

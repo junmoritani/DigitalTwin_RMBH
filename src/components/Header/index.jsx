@@ -6,7 +6,7 @@ function Header() {
     <header className="flex items-center  p-4 bg-PrimaryDark  ">
       {/* Logo/Branding Link */}
       <div className=" font-black  w-80 flex justify-center flex-shrink-0 text-white">
-        <a href="/">Kubus</a>
+        <a href="/">-</a>
       </div>
 
       <div className="">

@@ -268,25 +268,99 @@ function MapboxMap() {
     );
   };
 
-  const handleSaveTree = (newTree) => {
-    // ... existing code for saving tree ...
-    setTreesData({
-      ...treesData,
-      features: [...treesData.features, newTree],
+  // const handleSaveTree = (newTree) => {
+  //   // ... existing code for saving tree ...
+  //   setTreesData({
+  //     ...treesData,
+  //     features: [...treesData.features, newTree],
+  //   });
+  //   setAddMode(false);
+  //   setPendingCoords(null);
+
+  //   // 🌟 NEW: Clear the GeoJSON source data
+  //   const map = mapRef.current;
+  //   const pendingSource = map.getSource("pending-tree");
+  //   if (pendingSource) {
+  //     pendingSource.setData({ type: "FeatureCollection", features: [] });
+  //   }
+
+  //   if (previewMarkerRef.current) {
+  //     previewMarkerRef.current.cleanup?.();
+  //   }
+  // };
+
+  function mapFormToTreeFeature({ formData, coords, nextId }) {
+    return {
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: coords,
+      },
+      properties: {
+        ID: nextId,
+        ID_ARVORE_SIIA: null,
+
+        TIPO_INDIVIDUO: "Árvore",
+        LOCAL_PLANTIO: formData.LOCAL_PLANTIO ?? null,
+        LOGRADOURO_REFERENCIA: formData.LOGRADOURO_REFERENCIA ?? null,
+        NUMERO_REFERENCIA: formData.NUMERO_REFERENCIA ?? null,
+        LOCAL_REFERENCIA: null,
+
+        NOME_POPULAR: formData.NOME_POPULAR ?? null,
+        NOME_CIENTIFICO: null,
+
+        DATA_LEVANTAMENTO: new Date().toISOString(),
+        ORGAO_LEVANTAMENTO: "Colaborativo",
+
+        // Extended attributes (OK if you accept schema evolution)
+        CEP: formData.CEP ?? null,
+        OBSERVACOES: formData.OBSERVACOES ?? null,
+        CLASS_ESPECIAL: formData.CLASS_ESPECIAL ?? null,
+        NOVO_PLANTIO: formData.NOVO_PLANTIO ?? null,
+        RESPONSAVEL: formData.RESPONSAVEL ?? null,
+
+        UTM_X_SIRGAS_2000: null,
+        UTM_Y_SIRGAS_2000: null,
+      },
+    };
+  }
+
+  const handleSaveTree = ({ formData, coords, photoFile }) => {
+    if (!coords || !treesData) return;
+
+    const maxId = treesData.features.reduce((max, feature) => {
+      const id = feature.properties.ID;
+      return id > max ? id : max;
+    }, 0);
+
+    const nextId = maxId + 1;
+
+    const newFeature = mapFormToTreeFeature({
+      formData,
+      coords,
+      nextId,
     });
+
+    if (photoFile) {
+      console.log("Salvando foto:", photoFile.name);
+      // newFeature.properties.foto_temp = photoFile;
+    }
+
+    setTreesData((prev) => ({
+      ...prev,
+      features: [...prev.features, newFeature],
+    }));
+
+    // cleanup
     setAddMode(false);
     setPendingCoords(null);
+    setShowAddOptions(false);
 
-    // 🌟 NEW: Clear the GeoJSON source data
-    const map = mapRef.current;
-    const pendingSource = map.getSource("pending-tree");
-    if (pendingSource) {
-      pendingSource.setData({ type: "FeatureCollection", features: [] });
-    }
-
-    if (previewMarkerRef.current) {
-      previewMarkerRef.current.cleanup?.();
-    }
+    const pendingSource = mapRef.current?.getSource("pending-tree");
+    pendingSource?.setData({
+      type: "FeatureCollection",
+      features: [],
+    });
   };
 
   const handleCancelSaveTree = () => {
@@ -298,10 +372,6 @@ function MapboxMap() {
     const pendingSource = map.getSource("pending-tree");
     if (pendingSource) {
       pendingSource.setData({ type: "FeatureCollection", features: [] });
-    }
-
-    if (previewMarkerRef.current) {
-      previewMarkerRef.current.cleanup?.();
     }
   };
 

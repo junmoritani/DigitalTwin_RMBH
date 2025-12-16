@@ -26,7 +26,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
     OBSERVACOES: "",
     CLASS_ESPECIAL: "",
     NOVO_PLANTIO: "no",
-    RESPONSAVEL: ""
+    RESPONSAVEL: "",
   });
 
   const handleChange = (e) =>
@@ -63,34 +63,39 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
     fileInputRef.current.click();
   };
 
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+
+  //   const newTree = {
+  //     type: "Feature",
+  //     geometry: { type: "Point", coordinates: coords },
+  //     properties: {
+  //       ID: Date.now(),
+  //       ID_ARVORE_SIIA: null,
+  //       TIPO_INDIVIDUO: "Árvore",
+  //       LOGRADOURO_REFERENCIA: formData.LOGRADOURO_REFERENCIA || "Novo",
+  //       NUMERO_REFERENCIA: formData.NUMERO_REFERENCIA || "",
+  //       CEP: formData.CEP || "",
+  //       LOCAL_PLANTIO: formData.LOCAL_PLANTIO || "Desconhecido",
+  //       NOME_POPULAR: formData.NOME_POPULAR || "Nova árvore",
+  //       CLASS_ESPECIAL: formData.CLASS_ESPECIAL || "N/A",
+  //       NOVO_PLANTIO: formData.NOVO_PLANTIO || "não informado",
+  //       RESPONSAVEL: formData.RESPONSAVEL || "não informado",
+  //       OBSERVACOES: formData.OBSERVACOES || "",
+  //       DATA_LEVANTAMENTO: new Date().toLocaleString("pt-BR"), // Locale BR
+  //       ORGAO_LEVANTAMENTO: "Colaborativo", // Sugestão: diferenciar do oficial
+  //     },
+  //     // 📸 Adicionamos o arquivo separadamente ou dentro de properties
+  //     // (depende de como seu backend espera receber, mas aqui envio junto)
+  //     file: photoFile,
+  //   };
+
+  //   onSave(newTree);
+  // };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    const newTree = {
-      type: "Feature",
-      geometry: { type: "Point", coordinates: coords },
-      properties: {
-        ID: Date.now(),
-        ID_ARVORE_SIIA: null,
-        TIPO_INDIVIDUO: "Árvore",
-        LOGRADOURO_REFERENCIA: formData.LOGRADOURO_REFERENCIA || "Novo",
-        NUMERO_REFERENCIA: formData.NUMERO_REFERENCIA || "",
-        CEP: formData.CEP || "",
-        LOCAL_PLANTIO: formData.LOCAL_PLANTIO || "Desconhecido",
-        NOME_POPULAR: formData.NOME_POPULAR || "Nova árvore",
-        CLASS_ESPECIAL: formData.CLASS_ESPECIAL || "N/A",
-        NOVO_PLANTIO: formData.NOVO_PLANTIO || "não informado",
-        RESPONSAVEL: formData.RESPONSAVEL || "não informado",
-        OBSERVACOES: formData.OBSERVACOES || "",
-        DATA_LEVANTAMENTO: new Date().toLocaleString("pt-BR"), // Locale BR
-        ORGAO_LEVANTAMENTO: "Colaborativo", // Sugestão: diferenciar do oficial
-      },
-      // 📸 Adicionamos o arquivo separadamente ou dentro de properties 
-      // (depende de como seu backend espera receber, mas aqui envio junto)
-      file: photoFile
-    };
-
-    onSave(newTree);
+    onSave({ formData, coords, photoFile });
   };
 
   // 🔹 Reverse geocoding com Loading State e Race Condition Protection
@@ -114,8 +119,9 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
           // Lógica refinada para extração
           const road = place.place_type.includes("address")
             ? place.text
-            : context.find((c) => c.id.startsWith("street")) ?.text ||
-              place.text || ""; // Fallback para o nome do lugar se não achar rua
+            : context.find((c) => c.id.startsWith("street"))?.text ||
+              place.text ||
+              ""; // Fallback para o nome do lugar se não achar rua
 
           const houseNumber =
             place.place_type.includes("address") && place.address
@@ -123,7 +129,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
               : "";
 
           const postcode =
-            context.find((c) => c.id.startsWith("postcode")) ?.text || "";
+            context.find((c) => c.id.startsWith("postcode"))?.text || "";
 
           setFormData((prev) => ({
             ...prev,
@@ -148,13 +154,14 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
 
   return (
     <div className=" flex flex-col h-full min-h-0 bg-gray-50">
-      <h3 className="flex-none p-5 text-lg uppercase font-normal text-gray-800">incluir uma nova árvore</h3>
+      <h3 className="flex-none p-5 text-lg uppercase font-normal text-gray-800">
+        incluir uma nova árvore
+      </h3>
       <form
         onSubmit={handleSubmit}
         className="flex flex-col flex-1 min-h-0 justify-between "
       >
         <div className="flex-1 flex flex-col gap-4 overflow-y-auto min-h-0  p-3">
-
           {/* GRUPO ENDEREÇO */}
           <div className="bg-white p-2 flex flex-col gap-5 rounded-md ">
             <div>
@@ -164,6 +171,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
             <Button
               variant="secondary"
               text="Usar minha localização atual"
+              isSelected={true}
               onClick={(e) => {
                 e.preventDefault(); // Importante para não submeter o form
                 onAddTreeAtMyLocation();
@@ -174,7 +182,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
               <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
                 <AiOutlineLoading3Quarters className="animate-spin" />
                 Buscando endereço exato...
-               </div>
+              </div>
             )}
 
             <InputField
@@ -333,29 +341,26 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
               onChange={handleChange}
             />
             <div>
-            <label
-              htmlFor="obs-field"
-              className="font-semibold text-gray-500"
-            >
-              observações
+              <label
+                htmlFor="obs-field"
+                className="font-semibold text-gray-500"
+              >
+                observações
               </label>
-            <span className="text-gray-400 text-sm"> opcional</span>
-            <textarea
-              id="obs-field"
-              className="w-full bg-gray-100 p-2 border border-gray-300 rounded-md 
+              <span className="text-gray-400 text-sm"> opcional</span>
+              <textarea
+                id="obs-field"
+                className="w-full bg-gray-100 p-2 border border-gray-300 rounded-md 
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white 
               resize-none transition-all"
-              placeholder="Ex: Tronco com sinais de cupim, galhos baixos..."
-              rows="3"
-              name="OBSERVACOES" // Must match for both
-              value={formData.OBSERVACOES}
-              onChange={handleChange}
-            />
+                placeholder="Ex: Tronco com sinais de cupim, galhos baixos..."
+                rows="3"
+                name="OBSERVACOES" // Must match for both
+                value={formData.OBSERVACOES}
+                onChange={handleChange}
+              />
+            </div>
           </div>
-
-          </div>
-
-          
 
           {/* 📸 ÁREA DA FOTO (NOVA) */}
           <div className="bg-white p-4 flex flex-col gap-4 rounded-lg shadow-sm border border-gray-100">
@@ -406,33 +411,36 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
                 </button>
               </div>
             ) : (
-                <div
-                  onClick={triggerCamera}
-                  className="border-2 border-dashed border-gray-300 rounded-lg h-32 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-gray-400 transition cursor-pointer"
-                >
-                  <MdPhotoCamera size={32} />
-                  <span className="text-sm mt-1">Toque para adicionar foto</span>
-                </div>
-              )}
-               <div className="w-full flex flex-col ">
-            {/* Botão Principal de Câmera (só aparece se não tiver foto ainda, opcional) */}
-            {!photoPreview && (
-              <Button
-                variant="complementary"
-                text="Tirar Foto"
-                Icon={MdPhotoCamera}
-                type="button"
+              <div
                 onClick={triggerCamera}
-              />
+                className="border-2 border-dashed border-gray-300 rounded-lg h-32 flex flex-col items-center justify-center text-gray-400 hover:bg-gray-50 hover:border-gray-400 transition cursor-pointer"
+              >
+                <MdPhotoCamera size={32} />
+                <span className="text-sm mt-1">Toque para adicionar foto</span>
+              </div>
             )}
+            <div className="w-full flex flex-col ">
+              {/* Botão Principal de Câmera (só aparece se não tiver foto ainda, opcional) */}
+              {!photoPreview && (
+                <Button
+                  variant="complementary"
+                  text="Tirar Foto"
+                  Icon={MdPhotoCamera}
+                  type="button"
+                  onClick={triggerCamera}
+                />
+              )}
+            </div>
           </div>
-          </div>
-
-         
         </div>
         <div className="flex-none ">
           <div className="grid grid-cols-2 gap-3 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-            <Button variant="secondary" text="cancelar" onClick={onCancel} />
+            <Button
+              variant="secondary"
+              text="cancelar"
+              isSelected={true}
+              onClick={onCancel}
+            />
             <Button variant="primary" text="Salvar Árvore" type="submit" />
           </div>
         </div>
