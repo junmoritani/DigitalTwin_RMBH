@@ -29,12 +29,17 @@ function Toolbar({
   const [toolBarMode, setToolBarMode] = useState(TOOLBAR.LAYERS);
   const [editMode, setEditMode] = useState(EDIT_MODE.NONE);
 
-  const normalizeCapitalization = (value) =>
-    value ? value.charAt(0).toUpperCase() + value.slice(1) : null;
+  
 
   const goToLayers = () => {
     setEditMode(EDIT_MODE.NONE);
     setToolBarMode(TOOLBAR.LAYERS);
+    setAddMode(false);
+  };
+
+  const goToEdit = () => {
+    setEditMode(EDIT_MODE.NONE);
+    setToolBarMode(TOOLBAR.EDIT);
     setAddMode(false);
   };
 
@@ -48,13 +53,16 @@ function Toolbar({
   };
 
   const handleCancelAddTree = () => {
-    goToLayers();
-    onCancelAdd?.();
+    goToEdit();
+    onCancelAdd ?.();
   };
   return (
     <div className="flex flex-col justify-between p-3 bg-gray-50 min-h-0 h-full">
       <div className=" flex gap-5 addTreeButtons-container min-h-0 h-full">
         <div className="flex gap-3 w-80">
+
+        
+        {/* TOOLBAR - NAV */}
           <Button
             variant="secondary"
             text="Camadas"
@@ -74,6 +82,8 @@ function Toolbar({
           />
         </div>
 
+
+        {/* TOOLBAR - LAYER */}
         {toolBarMode === TOOLBAR.LAYERS && (
           <div className="flex flex-col p-3 gap-3 flex-none rounded-md bg-white">
             <h1 className=" text-PrimaryLight font-bold">condições atuais</h1>
@@ -84,29 +94,34 @@ function Toolbar({
           </div>
         )}
 
+
+        {/* TOOLBAR - EDIT */}
         {toolBarMode === TOOLBAR.EDIT && (
           <div className="flex flex-col gap-5">
             <Button
               variant="secondary"
               text="Adicionar árvore"
-              isSelected={editMode === EDIT_MODE.ADD_TREE}
+              isSelected={true}
               // onClick={() => setShowAddOptions(true)}
               onClick={() => {
                 setEditMode(EDIT_MODE.ADD_TREE);
                 setAddMode(true); // <--- 3. ATIVE O MODO NO MAPA AQUI
+                setToolBarMode(TOOLBAR.NONE);
               }}
             />
             <Button
               variant="secondary"
               text="relatar um problema"
-              isSelected={editMode === EDIT_MODE.REPORT}
+              isSelected={true}
               // onClick={() => setShowAddOptions(true)}
               onClick={() => setEditMode(EDIT_MODE.REPORT)}
             />
           </div>
         )}
 
-        {toolBarMode === TOOLBAR.EDIT && editMode === EDIT_MODE.ADD_TREE && (
+
+        {/* TOOLBAR - EDIT - ADD TREE */}
+        { editMode === EDIT_MODE.ADD_TREE && (
           <AddTreeForm
             coords={pendingCoords}
             onSave={handleSaveFromForm}

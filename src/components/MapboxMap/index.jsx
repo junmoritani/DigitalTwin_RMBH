@@ -22,6 +22,37 @@ function MapboxMap() {
   const [pendingCoords, setPendingCoords] = useState(null);
   const [showAddOptions, setShowAddOptions] = useState(false);
 
+
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !pendingCoords) return;
+  
+    const pendingSource = map.getSource("pending-tree");
+    if (pendingSource) {
+      pendingSource.setData({
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: {
+              type: "Point",
+              coordinates: pendingCoords,
+            },
+            properties: {},
+          },
+        ],
+      });
+    }
+  
+    map.flyTo({
+      center: pendingCoords,
+      zoom: 18,
+      essential: true,
+    });
+  }, [pendingCoords]);
+
+
   // ==================== MAP INITIALIZATION ====================
   useEffect(() => {
     if (!TOKEN) {

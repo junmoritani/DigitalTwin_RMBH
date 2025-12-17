@@ -9,7 +9,7 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = TOKEN;
 
-function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
+function AddTreeForm({ coords,  onUpdateCoords, onSave, onCancel, onAddTreeAtMyLocation }) {
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
   // States para a Foto
@@ -31,8 +31,9 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-
-  // 📸 Lógica de Captura
+    
+  // ==================== FOTO ====================
+  // Lógica de Captura
   const handlePhotoSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -43,7 +44,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
     }
   };
 
-  // 📸 Lógica de Remoção
+  // Lógica de Remoção
   const handleRemovePhoto = () => {
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -51,7 +52,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // 📸 Limpeza de Memória (Evita Memory Leak do ObjectURL)
+  // Limpeza de Memória (Evita Memory Leak do ObjectURL)
   useEffect(() => {
     return () => {
       if (photoPreview) URL.revokeObjectURL(photoPreview);
@@ -63,42 +64,15 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
     fileInputRef.current.click();
   };
 
-  // const handleSubmit = (e) => {
-  //   e.preventDefault();
-
-  //   const newTree = {
-  //     type: "Feature",
-  //     geometry: { type: "Point", coordinates: coords },
-  //     properties: {
-  //       ID: Date.now(),
-  //       ID_ARVORE_SIIA: null,
-  //       TIPO_INDIVIDUO: "Árvore",
-  //       LOGRADOURO_REFERENCIA: formData.LOGRADOURO_REFERENCIA || "Novo",
-  //       NUMERO_REFERENCIA: formData.NUMERO_REFERENCIA || "",
-  //       CEP: formData.CEP || "",
-  //       LOCAL_PLANTIO: formData.LOCAL_PLANTIO || "Desconhecido",
-  //       NOME_POPULAR: formData.NOME_POPULAR || "Nova árvore",
-  //       CLASS_ESPECIAL: formData.CLASS_ESPECIAL || "N/A",
-  //       NOVO_PLANTIO: formData.NOVO_PLANTIO || "não informado",
-  //       RESPONSAVEL: formData.RESPONSAVEL || "não informado",
-  //       OBSERVACOES: formData.OBSERVACOES || "",
-  //       DATA_LEVANTAMENTO: new Date().toLocaleString("pt-BR"), // Locale BR
-  //       ORGAO_LEVANTAMENTO: "Colaborativo", // Sugestão: diferenciar do oficial
-  //     },
-  //     // 📸 Adicionamos o arquivo separadamente ou dentro de properties
-  //     // (depende de como seu backend espera receber, mas aqui envio junto)
-  //     file: photoFile,
-  //   };
-
-  //   onSave(newTree);
-  // };
-
+// ==================== SUBMIT FORM ====================
   const handleSubmit = (e) => {
     e.preventDefault();
     onSave({ formData, coords, photoFile });
   };
 
-  // 🔹 Reverse geocoding com Loading State e Race Condition Protection
+
+// ==================== FETCH ADRESS FROM COORDS WITH LOADING ====================
+  // Reverse geocoding com Loading State e Race Condition Protection
   useEffect(() => {
     if (!coords) return;
 
@@ -152,6 +126,39 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
     };
   }, [coords]);
 
+
+  const fetchCoordsFromAddress = async () => {
+    const { LOGRADOURO_REFERENCIA, NUMERO_REFERENCIA, CEP } = formData;
+    if (!LOGRADOURO_REFERENCIA) return;
+  
+    const query = encodeURIComponent(
+      `${LOGRADOURO_REFERENCIA} ${NUMERO_REFERENCIA || ""} ${CEP || ""}`
+    );
+  
+    try {
+      setIsLoadingAddress(true);
+  
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${query}.json?` +
+        `access_token=${TOKEN}&country=BR&limit=1`
+      );
+  
+      const data = await res.json();
+  
+      if (data.features?.length) {
+        const [lng, lat] = data.features[0].center;
+  
+        // 🔥 MOVE O PONTO NO MAPA
+        onUpdateCoords([lng, lat]);
+      }
+    } catch (e) {
+      console.error("Erro no forward geocoding:", e);
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  };
+
+
   return (
     <div className=" flex flex-col h-full min-h-0 bg-gray-50">
       <h3 className="flex-none p-5 text-lg uppercase font-normal text-gray-800">
@@ -162,6 +169,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
         className="flex flex-col flex-1 min-h-0 justify-between "
       >
         <div className="flex-1 flex flex-col gap-4 overflow-y-auto min-h-0  p-3">
+
           {/* GRUPO ENDEREÇO */}
           <div className="bg-white p-2 flex flex-col gap-5 rounded-md ">
             <div>
@@ -223,6 +231,12 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
                 />
               </div>
             </div>
+            <Button
+  variant="secondary"
+  type="button"
+  text="Localizar no mapa"
+  onClick={fetchCoordsFromAddress}
+/>
 
             <div>
               <label
@@ -362,7 +376,7 @@ function AddTreeForm({ coords, onSave, onCancel, onAddTreeAtMyLocation }) {
             </div>
           </div>
 
-          {/* 📸 ÁREA DA FOTO (NOVA) */}
+          {/* ÁREA DA FOTO (NOVA) */}
           <div className="bg-white p-4 flex flex-col gap-4 rounded-lg shadow-sm border border-gray-100">
             <div>
               <h2 className="text-xl font-semibold tracking-wide ">
