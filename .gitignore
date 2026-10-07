@@ -23,3 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 public/data/
+
+# Local PostGIS cluster, credentials, and Python env
+.pgdata/
+db/.env
+db/.venv/
+api/.venv/
+__pycache__/
+*.pyc

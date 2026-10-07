@@ -7,12 +7,18 @@ import Toolbar from "../Toolbar";
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = TOKEN;
 
+const EMPTY_TREES = { type: "FeatureCollection", features: [] };
+
 function MapboxMap() {
   // ==================== REFS ====================
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const addModeRef = useRef(false);
   const previewMarkerRef = useRef(null);
+  const refreshTimerRef = useRef(null);
+  const refreshAbortRef = useRef(null);
+  const addedTreesRef = useRef([]);
+  const deletedIdsRef = useRef(new Set());
 
   // ==================== STATE ====================
   const [treesData, setTreesData] = useState(null);
@@ -43,13 +49,20 @@ function MapboxMap() {
 
     map.on("load", () => {
       loadZoneamentoLayer(map);
-      loadArvoresLayer(map);
+      setupTreeLayer(map);
       setupPreviewDot(map);
+      refreshTreesInView(map);
     });
+
+    map.on("moveend", () => refreshTreesInView(map));
 
     setupMapClickHandlers(map);
 
-    return () => map.remove();
+    return () => {
+      window.clearTimeout(refreshTimerRef.current);
+      refreshAbortRef.current?.abort();
+      map.remove();
+    };
   }, []);
 
   // ==================== LAYER LOADING FUNCTIONS ====================
@@ -71,34 +84,82 @@ function MapboxMap() {
         },
         layout: { visibility: "none" },
       });
+      if (map.getLayer("arvores-layer")) {
+        map.moveLayer("arvores-layer");
+      }
     } catch (err) {
       console.error("Failed to load Zoneamento:", err);
     }
   };
 
-  const loadArvoresLayer = async (map) => {
+  const setupTreeLayer = (map) => {
+    if (!map.getSource("arvores")) {
+      map.addSource("arvores", { type: "geojson", data: EMPTY_TREES });
+    }
+
+    if (!map.getLayer("arvores-layer")) {
+      map.addLayer({
+        id: "arvores-layer",
+        type: "circle",
+        source: "arvores",
+        paint: {
+          "circle-radius": 5,
+          "circle-color": "#38a169",
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#ffffff",
+        },
+      });
+    }
+  };
+
+  const refreshTreesInView = (map) => {
+    window.clearTimeout(refreshTimerRef.current);
+    refreshTimerRef.current = window.setTimeout(() => {
+      loadTreesInView(map);
+    }, 200);
+  };
+
+  const loadTreesInView = async (map) => {
+    const bounds = map.getBounds();
+    const params = new URLSearchParams({
+      min_lng: bounds.getWest(),
+      min_lat: bounds.getSouth(),
+      max_lng: bounds.getEast(),
+      max_lat: bounds.getNorth(),
+    });
+
+    refreshAbortRef.current?.abort();
+    const controller = new AbortController();
+    refreshAbortRef.current = controller;
+
     try {
-      const res = await fetch("/data/Arvores.geojson");
+      const res = await fetch(`/api/trees?${params}`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        throw new Error(`Tree API responded with ${res.status}`);
+      }
       const geojson = await res.json();
-      setTreesData(geojson);
+      if (controller.signal.aborted) return;
 
-      if (!map.getSource("arvores")) {
-        map.addSource("arvores", { type: "geojson", data: geojson });
-      }
+      const deleted = deletedIdsRef.current;
+      const fromApi = (geojson.features ?? []).filter(
+        (feature) => !deleted.has(String(feature.properties?.ID))
+      );
+      const apiIds = new Set(
+        fromApi.map((feature) => String(feature.properties?.ID))
+      );
+      const added = addedTreesRef.current.filter(
+        (feature) => !apiIds.has(String(feature.properties?.ID))
+      );
 
-      if (!map.getLayer("arvores-layer")) {
-        map.addLayer({
-          id: "arvores-layer",
-          type: "circle",
-          source: "arvores",
-          paint: {
-            "circle-radius": 5,
-            "circle-color": "#38a169",
-          },
-        });
-      }
-    } catch (e) {
-      console.error("Failed to load Arvores:", e);
+      setTreesData({
+        type: "FeatureCollection",
+        features: [...fromApi, ...added],
+      });
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      console.error("Failed to load trees for the current view:", err);
     }
   };
 
@@ -340,6 +401,7 @@ function MapboxMap() {
       coords,
       nextId,
     });
+    addedTreesRef.current = [...addedTreesRef.current, newFeature];
 
     if (photoFile) {
       console.log("Salvando foto:", photoFile.name);
@@ -376,11 +438,20 @@ function MapboxMap() {
   };
 
   const handleDeleteTree = (id) => {
-    if (!treesData) return;
-    const newFeatures = treesData.features.filter(
-      (f) => f.properties.ID !== id
+    const key = String(id);
+    deletedIdsRef.current.add(key);
+    addedTreesRef.current = addedTreesRef.current.filter(
+      (feature) => String(feature.properties?.ID) !== key
     );
-    setTreesData({ ...treesData, features: newFeatures });
+    setTreesData((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        features: prev.features.filter(
+          (feature) => String(feature.properties?.ID) !== key
+        ),
+      };
+    });
     setSelectedTree(null);
   };
 
