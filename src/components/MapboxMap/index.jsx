@@ -1,34 +1,45 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "./style.css";
 import TreeCard from "../TreeCard";
 import Toolbar from "../Toolbar";
+import { MAP_CENTER, MAP_STYLE, MAP_ZOOM } from "../../map/config";
+import {
+  addPendingTreeLayer,
+  addTreeLayer,
+  clearPendingTree,
+  setPendingTree,
+} from "../../map/layers";
+import { nextTreeId, treeFeatureFromForm } from "../../map/treeFeature";
+import { useViewportTrees } from "../../map/useViewportTrees";
+import {
+  addZoneamentoLayer,
+  toggleZoneamentoVisibility,
+} from "../../map/zoneamento";
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 mapboxgl.accessToken = TOKEN;
 
-const EMPTY_TREES = { type: "FeatureCollection", features: [] };
-
 function MapboxMap() {
-  // ==================== REFS ====================
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const addModeRef = useRef(false);
-  const previewMarkerRef = useRef(null);
-  const refreshTimerRef = useRef(null);
-  const refreshAbortRef = useRef(null);
-  const addedTreesRef = useRef([]);
-  const deletedIdsRef = useRef(new Set());
-
-  // ==================== STATE ====================
-  const [treesData, setTreesData] = useState(null);
   const [selectedTree, setSelectedTree] = useState(null);
   const [zoneamentoVisible, setZoneamentoVisible] = useState(false);
   const [addMode, setAddMode] = useState(false);
   const [pendingCoords, setPendingCoords] = useState(null);
-  const [showAddOptions, setShowAddOptions] = useState(false);
 
-  // ==================== MAP INITIALIZATION ====================
+  const { treesData, refreshTreesInView, addLocalTree, removeLocalTree, stop } =
+    useViewportTrees(mapRef);
+  const refreshRef = useRef(refreshTreesInView);
+  const stopRef = useRef(stop);
+  refreshRef.current = refreshTreesInView;
+  stopRef.current = stop;
+
+  useEffect(() => {
+    addModeRef.current = addMode;
+  }, [addMode]);
+
   useEffect(() => {
     if (!TOKEN) {
       console.error("Mapbox token is missing. Check your .env file.");
@@ -37,447 +48,114 @@ function MapboxMap() {
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      center: [-43.93483, -19.92999],
-      zoom: 16.2,
+      center: MAP_CENTER,
+      zoom: MAP_ZOOM,
       pitch: 0,
       bearing: 0,
-      style: "mapbox://styles/mapbox/standard",
+      style: MAP_STYLE,
       antialias: true,
     });
-
     mapRef.current = map;
 
     map.on("load", () => {
-      loadZoneamentoLayer(map);
-      setupTreeLayer(map);
-      setupPreviewDot(map);
-      refreshTreesInView(map);
+      addZoneamentoLayer(map);
+      addTreeLayer(map);
+      addPendingTreeLayer(map);
+      refreshRef.current(map);
     });
 
-    map.on("moveend", () => refreshTreesInView(map));
+    map.on("moveend", () => refreshRef.current(map));
 
-    setupMapClickHandlers(map);
+    map.on("click", "arvores-layer", (event) => {
+      const feature = event.features?.[0];
+      if (feature) setSelectedTree(feature.properties);
+    });
+
+    map.on("click", (event) => {
+      if (!addModeRef.current) return;
+      const coords = [event.lngLat.lng, event.lngLat.lat];
+      setPendingCoords(coords);
+      setPendingTree(map, coords);
+    });
 
     return () => {
-      window.clearTimeout(refreshTimerRef.current);
-      refreshAbortRef.current?.abort();
+      stopRef.current();
       map.remove();
+      mapRef.current = null;
     };
   }, []);
 
-  // ==================== LAYER LOADING FUNCTIONS ====================
-  const loadZoneamentoLayer = async (map) => {
-    try {
-      const res = await fetch("/data/Zoneamento_wgs84.geojson");
-      const geojson = await res.json();
-
-      const { fillColorExpression } = generateZoneamentoColors(geojson);
-
-      map.addSource("urban-areas", { type: "geojson", data: geojson });
-      map.addLayer({
-        id: "zoneamento-layer",
-        type: "fill",
-        source: "urban-areas",
-        paint: {
-          "fill-color": fillColorExpression,
-          "fill-opacity": 0.3,
-        },
-        layout: { visibility: "none" },
-      });
-      if (map.getLayer("arvores-layer")) {
-        map.moveLayer("arvores-layer");
-      }
-    } catch (err) {
-      console.error("Failed to load Zoneamento:", err);
-    }
-  };
-
-  const setupTreeLayer = (map) => {
-    if (!map.getSource("arvores")) {
-      map.addSource("arvores", { type: "geojson", data: EMPTY_TREES });
-    }
-
-    if (!map.getLayer("arvores-layer")) {
-      map.addLayer({
-        id: "arvores-layer",
-        type: "circle",
-        source: "arvores",
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#38a169",
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#ffffff",
-        },
-      });
-    }
-  };
-
-  const refreshTreesInView = (map) => {
-    window.clearTimeout(refreshTimerRef.current);
-    refreshTimerRef.current = window.setTimeout(() => {
-      loadTreesInView(map);
-    }, 200);
-  };
-
-  const loadTreesInView = async (map) => {
-    const bounds = map.getBounds();
-    const params = new URLSearchParams({
-      min_lng: bounds.getWest(),
-      min_lat: bounds.getSouth(),
-      max_lng: bounds.getEast(),
-      max_lat: bounds.getNorth(),
-    });
-
-    refreshAbortRef.current?.abort();
-    const controller = new AbortController();
-    refreshAbortRef.current = controller;
-
-    try {
-      const res = await fetch(`/api/trees?${params}`, {
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        throw new Error(`Tree API responded with ${res.status}`);
-      }
-      const geojson = await res.json();
-      if (controller.signal.aborted) return;
-
-      const deleted = deletedIdsRef.current;
-      const fromApi = (geojson.features ?? []).filter(
-        (feature) => !deleted.has(String(feature.properties?.ID))
-      );
-      const apiIds = new Set(
-        fromApi.map((feature) => String(feature.properties?.ID))
-      );
-      const added = addedTreesRef.current.filter(
-        (feature) => !apiIds.has(String(feature.properties?.ID))
-      );
-
-      setTreesData({
-        type: "FeatureCollection",
-        features: [...fromApi, ...added],
-      });
-    } catch (err) {
-      if (err.name === "AbortError") return;
-      console.error("Failed to load trees for the current view:", err);
-    }
-  };
-
-  const setupPreviewDot = (map) => {
-    map.addSource("pending-tree", {
-      type: "geojson",
-      data: { type: "FeatureCollection", features: [] },
-    });
-
-    map.addLayer({
-      id: "pending-tree-layer",
-      type: "circle",
-      source: "pending-tree",
-      paint: {
-        "circle-radius": 6,
-        "circle-color": "#ff7f00",
-        "circle-stroke-width": 2,
-        "circle-stroke-color": "#fff",
-      },
-    });
-  };
-
-  // ==================== HELPER FUNCTIONS ====================
-  const generateZoneamentoColors = (geojson) => {
-    const idToColor = {};
-    const usedColors = new Set();
-
-    const getRandomColor = () => {
-      let color;
-      do {
-        color = `#${Math.floor(Math.random() * 16777215)
-          .toString(16)
-          .padStart(6, "0")}`;
-      } while (usedColors.has(color));
-      usedColors.add(color);
-      return color;
-    };
-
-    geojson.features.forEach((f) => {
-      const id = f.properties.ID_ZONEAME;
-      if (!idToColor[id]) idToColor[id] = getRandomColor();
-    });
-
-    const fillColorExpression = ["match", ["get", "ID_ZONEAME"]];
-    Object.entries(idToColor).forEach(([id, color]) => {
-      fillColorExpression.push(parseInt(id), color);
-    });
-    fillColorExpression.push("#cccccc");
-
-    return { fillColorExpression };
-  };
-
-  // ==================== MAP EVENT HANDLERS ====================
-  const setupMapClickHandlers = (map) => {
-    // Select tree on click
-    map.on("click", "arvores-layer", (e) => {
-      if (e.features.length > 0) {
-        const treeData = e.features[0].properties;
-        setSelectedTree(treeData);
-      }
-    });
-
-    // Add tree mode click handler
-    map.on("click", (e) => {
-      if (!addModeRef.current) return;
-      const coords = [e.lngLat.lng, e.lngLat.lat];
-      setPendingCoords(coords);
-
-      const pendingSource = map.getSource("pending-tree");
-      if (pendingSource) {
-        pendingSource.setData({
-          type: "FeatureCollection",
-          features: [
-            {
-              type: "Feature",
-              geometry: { type: "Point", coordinates: coords },
-              properties: {},
-            },
-          ],
-        });
-      }
-    });
-  };
-
-  // ==================== SYNC EFFECTS ====================
-  useEffect(() => {
-    addModeRef.current = addMode;
-  }, [addMode]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !treesData) return;
-    const source = map.getSource("arvores");
-    if (source) source.setData(treesData);
-  }, [treesData]);
-
-  // ==================== TREE MANAGEMENT HANDLERS ====================
-  const handleAddTreeOnMap = () => {
+  const askForMapClick = () => {
     setAddMode(true);
-    setShowAddOptions(false);
     alert("Clique no mapa para escolher a localização da árvore");
   };
 
   const handleAddTreeAtMyLocation = () => {
     if (!navigator.geolocation) {
       console.warn("Geolocation not supported, fallback to manual mode");
-      handleAddTreeOnMap();
+      askForMapClick();
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude } = position.coords;
-        const coords = [longitude, latitude];
+        const coords = [position.coords.longitude, position.coords.latitude];
         const map = mapRef.current;
         if (!map) return;
 
-        // --- REMOVE Marker logic from here if you want to use the layer dot ---
-
-        // Set state
         setAddMode(true);
-        // setShowAddOptions(false);
         setPendingCoords(coords);
-
-        // 🌟 NEW: Update the 'pending-tree' GeoJSON source
-        const pendingSource = map.getSource("pending-tree");
-        if (pendingSource) {
-          pendingSource.setData({
-            type: "FeatureCollection",
-            features: [
-              {
-                type: "Feature",
-                geometry: { type: "Point", coordinates: coords },
-                properties: {},
-              },
-            ],
-          });
-          console.log("Updated pending-tree source for layer dot.");
-        }
-        // --------------------------------------------------------------------
-
-        // Then fly to location
+        setPendingTree(map, coords);
         map.flyTo({ center: coords, zoom: 18 });
-
-        // Since you are using a LAYER dot, you might need a different drag/update mechanism
-        // or perhaps you intended to use the Marker (see alternative below).
-
-        // For now, let's remove the marker/drag logic that won't work without the marker:
-        /*
-          const marker = new mapboxgl.Marker({
-            color: "#FFA500",
-            draggable: true,
-          })
-            .setLngLat(coords)
-            .addTo(map);
-          // ... all subsequent marker creation, drag, click, and cleanup logic ...
-          */
-
-        // To allow adding/moving the layer dot with clicks, ensure addMode is set:
-        // The existing `setupMapClickHandlers` will handle subsequent clicks
-        // once `addMode` is `true`.
       },
       (error) => {
         console.error("Error getting location:", error);
-        handleAddTreeOnMap();
+        askForMapClick();
       }
     );
   };
 
-  // const handleSaveTree = (newTree) => {
-  //   // ... existing code for saving tree ...
-  //   setTreesData({
-  //     ...treesData,
-  //     features: [...treesData.features, newTree],
-  //   });
-  //   setAddMode(false);
-  //   setPendingCoords(null);
-
-  //   // 🌟 NEW: Clear the GeoJSON source data
-  //   const map = mapRef.current;
-  //   const pendingSource = map.getSource("pending-tree");
-  //   if (pendingSource) {
-  //     pendingSource.setData({ type: "FeatureCollection", features: [] });
-  //   }
-
-  //   if (previewMarkerRef.current) {
-  //     previewMarkerRef.current.cleanup?.();
-  //   }
-  // };
-
-  function mapFormToTreeFeature({ formData, coords, nextId }) {
-    return {
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: coords,
-      },
-      properties: {
-        ID: nextId,
-        ID_ARVORE_SIIA: null,
-
-        TIPO_INDIVIDUO: "Árvore",
-        LOCAL_PLANTIO: formData.LOCAL_PLANTIO ?? null,
-        LOGRADOURO_REFERENCIA: formData.LOGRADOURO_REFERENCIA ?? null,
-        NUMERO_REFERENCIA: formData.NUMERO_REFERENCIA ?? null,
-        LOCAL_REFERENCIA: null,
-
-        NOME_POPULAR: formData.NOME_POPULAR ?? null,
-        NOME_CIENTIFICO: null,
-
-        DATA_LEVANTAMENTO: new Date().toISOString(),
-        ORGAO_LEVANTAMENTO: "Colaborativo",
-
-        // Extended attributes (OK if you accept schema evolution)
-        CEP: formData.CEP ?? null,
-        OBSERVACOES: formData.OBSERVACOES ?? null,
-        CLASS_ESPECIAL: formData.CLASS_ESPECIAL ?? null,
-        NOVO_PLANTIO: formData.NOVO_PLANTIO ?? null,
-        RESPONSAVEL: formData.RESPONSAVEL ?? null,
-
-        UTM_X_SIRGAS_2000: null,
-        UTM_Y_SIRGAS_2000: null,
-      },
-    };
-  }
-
   const handleSaveTree = ({ formData, coords, photoFile }) => {
     if (!coords || !treesData) return;
 
-    const maxId = treesData.features.reduce((max, feature) => {
-      const id = feature.properties.ID;
-      return id > max ? id : max;
-    }, 0);
-
-    const nextId = maxId + 1;
-
-    const newFeature = mapFormToTreeFeature({
+    const feature = treeFeatureFromForm({
       formData,
       coords,
-      nextId,
+      nextId: nextTreeId(treesData.features),
     });
-    addedTreesRef.current = [...addedTreesRef.current, newFeature];
 
     if (photoFile) {
       console.log("Salvando foto:", photoFile.name);
-      // newFeature.properties.foto_temp = photoFile;
     }
 
-    setTreesData((prev) => ({
-      ...prev,
-      features: [...prev.features, newFeature],
-    }));
-
-    // cleanup
+    addLocalTree(feature);
     setAddMode(false);
     setPendingCoords(null);
-    setShowAddOptions(false);
-
-    const pendingSource = mapRef.current?.getSource("pending-tree");
-    pendingSource?.setData({
-      type: "FeatureCollection",
-      features: [],
-    });
+    clearPendingTree(mapRef.current);
   };
 
   const handleCancelSaveTree = () => {
     setAddMode(false);
     setPendingCoords(null);
-
-    // 🌟 NEW: Clear the GeoJSON source data
-    const map = mapRef.current;
-    const pendingSource = map.getSource("pending-tree");
-    if (pendingSource) {
-      pendingSource.setData({ type: "FeatureCollection", features: [] });
-    }
+    clearPendingTree(mapRef.current);
   };
 
   const handleDeleteTree = (id) => {
-    const key = String(id);
-    deletedIdsRef.current.add(key);
-    addedTreesRef.current = addedTreesRef.current.filter(
-      (feature) => String(feature.properties?.ID) !== key
-    );
-    setTreesData((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        features: prev.features.filter(
-          (feature) => String(feature.properties?.ID) !== key
-        ),
-      };
-    });
+    removeLocalTree(id);
     setSelectedTree(null);
   };
 
   const toggleZoneamento = () => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    const visibility = map.getLayoutProperty("zoneamento-layer", "visibility");
-    const newVisibility = visibility === "visible" ? "none" : "visible";
-
-    map.setLayoutProperty("zoneamento-layer", "visibility", newVisibility);
-    setZoneamentoVisible(newVisibility === "visible");
+    const visible = toggleZoneamentoVisibility(mapRef.current);
+    if (visible !== null) setZoneamentoVisible(visible);
   };
 
-  // ==================== RENDER ====================
   return (
     <div className="w-full h-full flex min-h-0 flex-row grow overflow-hidden ">
       <Toolbar
-        addMode={addMode}
-        setAddMode={setAddMode}
         pendingCoords={pendingCoords}
-        setPendingCoords={setPendingCoords}
-        handleAddTreeOnMap={handleAddTreeOnMap}
+        setAddMode={setAddMode}
         handleAddTreeAtMyLocation={handleAddTreeAtMyLocation}
-        showAddOptions={showAddOptions}
-        setShowAddOptions={setShowAddOptions}
         onSaveTree={handleSaveTree}
         onCancelAdd={handleCancelSaveTree}
         onShowZoneamento={toggleZoneamento}

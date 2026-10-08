@@ -6,6 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "db": "powershell -NoProfile -File db/start.ps1",
+    "db:stop": "powershell -NoProfile -File db/stop.ps1",
+    "api": "api/.venv/Scripts/python.exe -m uvicorn api.main:app --host 127.0.0.1 --port 8000",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
