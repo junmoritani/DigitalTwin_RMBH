@@ -1,29 +1,286 @@
-/* sizing of map container */
-.card {
+.tree-card {
   position: absolute;
-  top: auto;
-  right: 0rem;
-  z-index: 10;
-  background: rgb(255, 255, 255);
-  height: auto;
-  padding: 1rem;
-  width: 300px;
+  z-index: 3;
+  left: 1.5rem;
+  bottom: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  width: 18.75rem;
+  max-height: calc(100% - 3rem);
+  overflow: hidden;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  color: #111827;
 }
 
-.report {
-  background-color: rgb(249, 215, 215);
-  padding: 10px;
+.tree-card-header {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.875rem 0.875rem 0.5rem;
+}
+
+.tree-card-header > div {
+  flex: 1 1 auto;
+}
+
+.tree-card-kicker {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #3b755f;
+}
+
+.tree-card-title {
+  margin: 0.125rem 0 0;
+  font-size: 1.125rem;
+  line-height: 1.25;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.tree-card-scientific {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.3;
+  color: #6b7280;
+  overflow-wrap: anywhere;
+}
+
+.tree-card-close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.tree-card-close svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+.tree-card-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.tree-card-close:focus-visible {
+  outline: 2px solid #3b755f;
+  outline-offset: 2px;
+}
+
+.tree-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0.25rem 0.875rem 0.875rem;
+}
+
+.tree-card-loading {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.tree-card-photo {
+  position: relative;
+  margin: 0;
+  height: 8.5rem;
+  overflow: hidden;
   border-radius: 10px;
+  background: #f3f4f6;
 }
 
-.report-options {
+.tree-card-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tree-card-photo figcaption {
+  position: absolute;
+  left: 0.5rem;
+  bottom: 0.5rem;
+  max-width: calc(100% - 1rem);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1d372e;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.tree-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree-card-photo + .tree-card-chips {
+  margin-top: 0.75rem;
+}
+
+.tree-card-chips li {
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(59, 117, 95, 0.08);
+  color: #1d372e;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.tree-card-facts {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.tree-card-body > .tree-card-facts:first-child {
+  margin-top: 0;
+}
+
+.tree-card-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+}
+
+.tree-card-facts dt {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.tree-card-facts dd {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.tree-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0 0.875rem 0.875rem;
+  background: #fff;
+}
+
+.tree-card-footer:empty {
+  display: none;
+}
+
+.tree-card-status {
+  margin: 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: 0.5rem;
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.tree-card-status.is-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.tree-card-report,
+.tree-card-report-options button {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #1f2937;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tree-card-report {
+  min-height: 2.25rem;
+  border-color: #3b755f;
+  background: #3b755f;
+  color: #fff;
+  text-align: center;
+}
+
+.tree-card-report:hover {
+  background: #1d372e;
+}
+
+.tree-card-report-options button:hover:not(:disabled) {
+  background: #f9fafb;
+}
+
+.tree-card-report:focus-visible,
+.tree-card-report-options button:focus-visible {
+  outline: 2px solid #3b755f;
+  outline-offset: 2px;
+}
+
+.tree-card-report-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.tree-card-report-options p {
+  margin: 0 0 0.125rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.tree-card-report-options button.is-danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.tree-card-report-options button.is-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: #6b7280;
+  text-align: center;
+  font-weight: 500;
+}
+
+.tree-card-report-options button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .tree-card {
+    position: fixed;
+    z-index: 30;
+    right: 0.75rem;
+    bottom: calc(5.25rem + env(safe-area-inset-bottom));
+    left: 0.75rem;
+    width: auto;
+    max-height: min(46vh, 22rem);
+  }
 }

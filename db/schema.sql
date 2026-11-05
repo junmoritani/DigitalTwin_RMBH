@@ -75,24 +75,8 @@ AS $$
       'geometry', ST_AsGeoJSON(geom)::jsonb,
       'properties', jsonb_build_object(
         'ID', id,
-        'ID_ARVORE_SIIA', id_arvore_siia,
-        'UTM_X_SIRGAS_2000', utm_x_sirgas_2000,
-        'UTM_Y_SIRGAS_2000', utm_y_sirgas_2000,
-        'TIPO_INDIVIDUO', tipo_individuo,
         'LOCAL_PLANTIO', local_plantio,
-        'LOGRADOURO_REFERENCIA', logradouro_referencia,
-        'NUMERO_REFERENCIA', numero_referencia,
-        'LOCAL_REFERENCIA', local_referencia,
-        'NOME_CIENTIFICO', nome_cientifico,
-        'NOME_POPULAR', nome_popular,
-        'DATA_LEVANTAMENTO', data_levantamento,
-        'ORGAO_LEVANTAMENTO', orgao_levantamento,
-        'CEP', cep,
-        'OBSERVACOES', observacoes,
-        'CLASS_ESPECIAL', class_especial,
-        'NOVO_PLANTIO', novo_plantio,
-        'RESPONSAVEL', responsavel,
-        'FOTO_URL', foto_url
+        'NOME_POPULAR', nome_popular
       )
     ) AS feature
     FROM trees

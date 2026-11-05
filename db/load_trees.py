@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ENV_FILE = Path(__file__).resolve().parent / ".env"
-GEOJSON = ROOT / "public" / "data" / "Arvores.geojson"
+GEOJSON = ROOT / "db" / "raw_data" / "Arvores.geojson"
 
 DATE_FORMATS = (
     "%d/%m/%Y %H:%M:%S",

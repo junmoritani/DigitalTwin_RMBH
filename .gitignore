@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files
@@ -22,7 +25,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-public/data/
+
+# Keep only the 3 production static files in public/data/; ignore raw GIS exports
+public/data/*
+!public/data/analytics_summary.json
+!public/data/bairro_tree_density.geojson
+db/raw_data/
 
 # Local PostGIS cluster, credentials, and Python env
 .pgdata/

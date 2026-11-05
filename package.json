@@ -8,7 +8,9 @@
     "dev": "vite",
     "db": "powershell -NoProfile -File db/start.ps1",
     "db:stop": "powershell -NoProfile -File db/stop.ps1",
-    "api": "api/.venv/Scripts/python.exe -m uvicorn api.main:app --host 127.0.0.1 --port 8000",
+    "db:enrich": "api\\.venv\\Scripts\\python.exe -u db/upload_to_supabase.py --enrich-local",
+    "db:upload-supabase": "api\\.venv\\Scripts\\python.exe -u db/upload_to_supabase.py --upload",
+    "api": "api\\.venv\\Scripts\\python.exe -m uvicorn api.main:app --host 127.0.0.1 --port 8000",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -16,6 +18,7 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
     "@tailwindcss/vite": "^4.1.14",
     "@types/mapbox-gl": "^3.4.1",
     "cesium": "^1.129.0",

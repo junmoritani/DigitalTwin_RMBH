@@ -18,8 +18,8 @@ function Button({
   switch (variant) {
     case "secondary":
       variantStyles = isSelected
-        ? "bg-white  border-gray-200 ring-2 ring-gray-200 hover:bg-gray-300"
-        : "bg-transparent  text-gray-800 hover:bg-gray-300";
+        ? "border border-gray-300 bg-white text-gray-900 ring-2 ring-gray-200"
+        : "border border-gray-300 bg-white text-gray-800 hover:bg-gray-100";
       break;
     case "danger":
       variantStyles =
